@@ -1,0 +1,647 @@
+import React, { useState, useEffect } from 'react';
+import {
+  StyleSheet,
+  ScrollView,
+  View,
+  TouchableOpacity,
+  Text,
+  Alert,
+  ActivityIndicator,
+} from 'react-native';
+import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import DateTimePicker from '@react-native-community/datetimepicker';
+
+import { ThemedView } from '@/components/themed-view';
+import { Input } from '@/components/ui/Input';
+import { Button } from '@/components/ui/Button';
+import { IconSymbol } from '@/components/ui/icon-symbol';
+import { useRenewals } from '@/hooks/useRenewals';
+import { useThemeColor } from '@/hooks/use-theme-color';
+import {
+  type Renewal,
+  type RenewalFormData,
+  RENEWAL_TYPES,
+  RENEWAL_FREQUENCIES,
+  CURRENCY_OPTIONS,
+  COLORS,
+  generateId,
+} from '@/types/renewal';
+
+export default function RenewalFormScreen() {
+  const router = useRouter();
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const isEditing = id !== 'new';
+  const { addRenewal, updateRenewal, deleteRenewal, getRenewalById } = useRenewals();
+
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+
+  const backgroundColor = useThemeColor({ light: '#F2F2F7', dark: '#2C2C2E' }, 'background');
+  const textColor = useThemeColor({ light: '#000000', dark: '#FFFFFF' }, 'text');
+
+  const [formData, setFormData] = useState<RenewalFormData>({
+    name: '',
+    type: 'subscription',
+    frequency: 'monthly',
+    cost: '',
+    currency: 'EUR',
+    renewalDate: new Date(),
+    provider: '',
+    notes: '',
+    color: COLORS[0],
+    icon: 'creditcard.fill',
+    notificationEnabled: true,
+    notificationDaysBefore: 7,
+  });
+
+  useEffect(() => {
+    if (isEditing) {
+      loadRenewal();
+    }
+  }, [id]);
+
+  const loadRenewal = async () => {
+    setLoading(true);
+    const renewal = await getRenewalById(id);
+    if (renewal) {
+      setFormData({
+        name: renewal.name,
+        type: renewal.type,
+        frequency: renewal.frequency,
+        cost: renewal.cost.toString(),
+        currency: renewal.currency,
+        renewalDate: new Date(renewal.renewalDate),
+        provider: renewal.provider || '',
+        notes: renewal.notes || '',
+        color: renewal.color || COLORS[0],
+        icon: renewal.icon || 'creditcard.fill',
+        notificationEnabled: renewal.notificationEnabled,
+        notificationDaysBefore: renewal.notificationDaysBefore,
+      });
+    }
+    setLoading(false);
+  };
+
+  const handleSave = async () => {
+    if (!formData.name.trim()) {
+      Alert.alert('Error', 'El nombre es obligatorio');
+      return;
+    }
+    if (!formData.cost || isNaN(parseFloat(formData.cost))) {
+      Alert.alert('Error', 'El coste debe ser un número válido');
+      return;
+    }
+
+    setSaving(true);
+
+    const renewalData: Renewal = {
+      id: isEditing ? id : generateId(),
+      name: formData.name.trim(),
+      type: formData.type,
+      frequency: formData.frequency,
+      cost: parseFloat(formData.cost),
+      currency: formData.currency,
+      renewalDate: formData.renewalDate.toISOString(),
+      provider: formData.provider?.trim() || undefined,
+      notes: formData.notes?.trim() || undefined,
+      color: formData.color,
+      icon: formData.icon,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      notificationEnabled: formData.notificationEnabled,
+      notificationDaysBefore: formData.notificationDaysBefore,
+    };
+
+    const success = isEditing
+      ? await updateRenewal(renewalData)
+      : await addRenewal(renewalData);
+
+    setSaving(false);
+
+    if (success) {
+      router.back();
+    } else {
+      Alert.alert('Error', 'No se pudo guardar la renovación');
+    }
+  };
+
+  const handleDelete = () => {
+    Alert.alert(
+      'Eliminar renovación',
+      '¿Estás seguro de que quieres eliminar esta renovación?',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Eliminar',
+          style: 'destructive',
+          onPress: async () => {
+            const success = await deleteRenewal(id);
+            if (success) {
+              router.back();
+            } else {
+              Alert.alert('Error', 'No se pudo eliminar la renovación');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const onDateChange = (event: any, selectedDate?: Date) => {
+    setShowDatePicker(false);
+    if (selectedDate) {
+      setFormData(prev => ({ ...prev, renewalDate: selectedDate }));
+    }
+  };
+
+  const updateFormData = <K extends keyof RenewalFormData>(
+    key: K,
+    value: RenewalFormData[K]
+  ) => {
+    setFormData(prev => ({ ...prev, [key]: value }));
+  };
+
+  if (loading) {
+    return (
+      <ThemedView style={styles.centerContainer}>
+        <ActivityIndicator size="large" />
+      </ThemedView>
+    );
+  }
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <Stack.Screen
+        options={{
+          title: isEditing ? 'Editar Renovación' : 'Nueva Renovación',
+          headerLeft: () => (
+            <TouchableOpacity onPress={() => router.back()}>
+              <Text style={styles.headerButton}>Cancelar</Text>
+            </TouchableOpacity>
+          ),
+        }}
+      />
+
+      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Información básica</Text>
+          
+          <Input
+            label="Nombre *"
+            placeholder="Ej: Seguro de coche"
+            value={formData.name}
+            onChangeText={(text) => updateFormData('name', text)}
+            style={styles.input}
+          />
+
+          <Input
+            label="Proveedor"
+            placeholder="Ej: Mapfre"
+            value={formData.provider}
+            onChangeText={(text) => updateFormData('provider', text)}
+            style={styles.input}
+          />
+
+          <View style={styles.row}>
+            <Input
+              label="Coste *"
+              placeholder="0.00"
+              value={formData.cost}
+              onChangeText={(text) => updateFormData('cost', text)}
+              keyboardType="numeric"
+              style={[styles.input, { flex: 1 }]}
+            />
+            
+            <View style={[styles.pickerContainer, { flex: 1, marginLeft: 12 }]}>
+              <Text style={styles.label}>Moneda</Text>
+              <View style={[styles.picker, { backgroundColor }]}>
+                {CURRENCY_OPTIONS.map((currency) => (
+                  <TouchableOpacity
+                    key={currency.value}
+                    style={[
+                      styles.currencyOption,
+                      formData.currency === currency.value && styles.currencyOptionSelected,
+                    ]}
+                    onPress={() => updateFormData('currency', currency.value)}
+                  >
+                    <Text
+                      style={[
+                        styles.currencyText,
+                        formData.currency === currency.value && styles.currencyTextSelected,
+                      ]}
+                    >
+                      {currency.symbol}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Tipo y frecuencia</Text>
+          
+          <Text style={styles.label}>Tipo</Text>
+          <View style={styles.optionsRow}>
+            {RENEWAL_TYPES.map((type) => (
+              <TouchableOpacity
+                key={type.value}
+                style={[
+                  styles.typeOption,
+                  formData.type === type.value && styles.typeOptionSelected,
+                  { backgroundColor },
+                ]}
+                onPress={() => {
+                  updateFormData('type', type.value);
+                  updateFormData('icon', type.icon);
+                }}
+              >
+                <IconSymbol
+                  name={type.icon as any}
+                  size={20}
+                  color={formData.type === type.value ? '#007AFF' : '#8E8E93'}
+                />
+                <Text
+                  style={[
+                    styles.typeText,
+                    formData.type === type.value && styles.typeTextSelected,
+                  ]}
+                >
+                  {type.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <Text style={[styles.label, { marginTop: 16 }]}>Frecuencia</Text>
+          <View style={[styles.picker, { backgroundColor }]}>
+            {RENEWAL_FREQUENCIES.map((freq) => (
+              <TouchableOpacity
+                key={freq.value}
+                style={[
+                  styles.freqOption,
+                  formData.frequency === freq.value && styles.freqOptionSelected,
+                ]}
+                onPress={() => updateFormData('frequency', freq.value)}
+              >
+                <Text
+                  style={[
+                    styles.freqText,
+                    formData.frequency === freq.value && styles.freqTextSelected,
+                  ]}
+                >
+                  {freq.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Fecha y color</Text>
+          
+          <Text style={styles.label}>Fecha de renovación</Text>
+          <TouchableOpacity
+            style={[styles.dateButton, { backgroundColor }]}
+            onPress={() => setShowDatePicker(true)}
+          >
+            <IconSymbol name="calendar" size={20} color="#007AFF" />
+            <Text style={styles.dateText}>
+              {formData.renewalDate.toLocaleDateString('es-ES', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+              })}
+            </Text>
+          </TouchableOpacity>
+
+          {showDatePicker && (
+            <DateTimePicker
+              value={formData.renewalDate}
+              mode="date"
+              display="spinner"
+              onChange={onDateChange}
+              minimumDate={new Date()}
+            />
+          )}
+
+          <Text style={[styles.label, { marginTop: 16 }]}>Color</Text>
+          <View style={styles.colorRow}>
+            {COLORS.map((color) => (
+              <TouchableOpacity
+                key={color}
+                style={[
+                  styles.colorOption,
+                  { backgroundColor: color },
+                  formData.color === color && styles.colorOptionSelected,
+                ]}
+                onPress={() => updateFormData('color', color)}
+              >
+                {formData.color === color && (
+                  <IconSymbol name="checkmark" size={16} color="#FFFFFF" />
+                )}
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Notificaciones</Text>
+          
+          <View style={styles.notificationRow}>
+            <Text style={styles.label}>Activar notificaciones</Text>
+            <TouchableOpacity
+              style={[
+                styles.toggle,
+                formData.notificationEnabled && styles.toggleActive,
+              ]}
+              onPress={() => updateFormData('notificationEnabled', !formData.notificationEnabled)}
+            >
+              <View
+                style={[
+                  styles.toggleKnob,
+                  formData.notificationEnabled && styles.toggleKnobActive,
+                ]}
+              />
+            </TouchableOpacity>
+          </View>
+
+          {formData.notificationEnabled && (
+            <View style={styles.notificationDaysRow}>
+              <Text style={styles.label}>Avisar</Text>
+              <View style={[styles.daysPicker, { backgroundColor }]}>
+                {[1, 3, 7, 14, 30].map((days) => (
+                  <TouchableOpacity
+                    key={days}
+                    style={[
+                      styles.dayOption,
+                      formData.notificationDaysBefore === days && styles.dayOptionSelected,
+                    ]}
+                    onPress={() => updateFormData('notificationDaysBefore', days)}
+                  >
+                    <Text
+                      style={[
+                        styles.dayText,
+                        formData.notificationDaysBefore === days && styles.dayTextSelected,
+                      ]}
+                    >
+                      {days}d
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              <Text style={styles.label}>antes</Text>
+            </View>
+          )}
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Notas</Text>
+          <Input
+            placeholder="Añade notas adicionales..."
+            value={formData.notes}
+            onChangeText={(text) => updateFormData('notes', text)}
+            multiline
+            numberOfLines={4}
+          />
+        </View>
+
+        <View style={styles.buttonContainer}>
+          <Button
+            title={isEditing ? 'Guardar cambios' : 'Crear renovación'}
+            onPress={handleSave}
+            loading={saving}
+          />
+          
+          {isEditing && (
+            <Button
+              title="Eliminar renovación"
+              variant="danger"
+              onPress={handleDelete}
+              style={{ marginTop: 12 } as any}
+            />
+          )}
+        </View>
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  centerContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerButton: {
+    color: '#007AFF',
+    fontSize: 16,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  section: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  sectionTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#8E8E93',
+    textTransform: 'uppercase',
+    marginBottom: 12,
+    marginTop: 4,
+  },
+  input: {
+    marginBottom: 12,
+  },
+  row: {
+    flexDirection: 'row',
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: '500',
+    marginBottom: 6,
+    color: '#3C3C43',
+  },
+  pickerContainer: {
+    marginBottom: 12,
+  },
+  picker: {
+    flexDirection: 'row',
+    borderRadius: 8,
+    padding: 4,
+  },
+  currencyOption: {
+    flex: 1,
+    paddingVertical: 10,
+    alignItems: 'center',
+    borderRadius: 6,
+  },
+  currencyOptionSelected: {
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  currencyText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#8E8E93',
+  },
+  currencyTextSelected: {
+    color: '#007AFF',
+  },
+  optionsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  typeOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    gap: 6,
+  },
+  typeOptionSelected: {
+    backgroundColor: '#007AFF15',
+  },
+  typeText: {
+    fontSize: 14,
+    color: '#3C3C43',
+  },
+  typeTextSelected: {
+    color: '#007AFF',
+    fontWeight: '500',
+  },
+  freqOption: {
+    flex: 1,
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  freqOptionSelected: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  freqText: {
+    fontSize: 14,
+    color: '#8E8E93',
+  },
+  freqTextSelected: {
+    color: '#007AFF',
+    fontWeight: '500',
+  },
+  dateButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    borderRadius: 8,
+    gap: 8,
+  },
+  dateText: {
+    fontSize: 16,
+    color: '#000000',
+  },
+  colorRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  colorOption: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  colorOptionSelected: {
+    borderWidth: 3,
+    borderColor: '#FFFFFF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  notificationRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  toggle: {
+    width: 50,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: '#E5E5EA',
+    padding: 2,
+  },
+  toggleActive: {
+    backgroundColor: '#34C759',
+  },
+  toggleKnob: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  toggleKnobActive: {
+    transform: [{ translateX: 20 }],
+  },
+  notificationDaysRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 12,
+    gap: 8,
+  },
+  daysPicker: {
+    flexDirection: 'row',
+    borderRadius: 8,
+    padding: 4,
+  },
+  dayOption: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+  },
+  dayOptionSelected: {
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  dayText: {
+    fontSize: 14,
+    color: '#8E8E93',
+  },
+  dayTextSelected: {
+    color: '#007AFF',
+    fontWeight: '500',
+  },
+  buttonContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 24,
+  },
+});
