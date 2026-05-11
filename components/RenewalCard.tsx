@@ -1,11 +1,13 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Card } from '@/components/ui/Card';
 import type { Renewal } from '@/types/renewal';
 import { getDaysUntilRenewal, getRenewalStatus, formatCurrency } from '@/types/renewal';
 import { useThemeColor } from '@/hooks/use-theme-color';
+
+const isWeb = Platform.OS === 'web';
 
 interface RenewalCardProps {
   renewal: Renewal;
@@ -15,13 +17,13 @@ export function RenewalCard({ renewal }: RenewalCardProps) {
   const router = useRouter();
   const daysUntil = getDaysUntilRenewal(renewal.renewalDate);
   const status = getRenewalStatus(daysUntil);
-  
+
   const getStatusColor = () => {
     switch (status) {
-      case 'overdue': return '#FF3B30';
-      case 'soon': return '#FF9500';
-      case 'upcoming': return '#34C759';
-      default: return '#8E8E93';
+      case 'overdue': return isWeb ? '#FF453A' : '#FF3B30';
+      case 'soon': return isWeb ? '#FF9F0A' : '#FF9500';
+      case 'upcoming': return isWeb ? '#30D158' : '#34C759';
+      default: return isWeb ? '#81899b' : '#8E8E93';
     }
   };
 
@@ -32,25 +34,25 @@ export function RenewalCard({ renewal }: RenewalCardProps) {
     return `Vence en ${daysUntil} días`;
   };
 
-  const iconColor = renewal.color || '#007AFF';
+  const iconColor = renewal.color || (isWeb ? '#b6d9fc' : '#007AFF');
   const textColor = useThemeColor({ light: '#000000', dark: '#FFFFFF' }, 'text');
-  const secondaryTextColor = useThemeColor({ light: '#666666', dark: '#999999' }, 'text');
+  const secondaryTextColor = isWeb ? '#9da7ba' : useThemeColor({ light: '#666666', dark: '#999999' }, 'text');
 
   return (
     <TouchableOpacity
       activeOpacity={0.7}
       onPress={() => router.push(`/renewal/${renewal.id}`)}
     >
-      <Card>
+      <Card variant={isWeb ? 'glass' : 'default'}>
         <View style={styles.container}>
           <View style={[styles.iconContainer, { backgroundColor: `${iconColor}20` }]}>
-            <IconSymbol 
-              name={(renewal.icon as any) || 'tag.fill'} 
-              size={24} 
-              color={iconColor} 
+            <IconSymbol
+              name={(renewal.icon as any) || 'tag.fill'}
+              size={24}
+              color={iconColor}
             />
           </View>
-          
+
           <View style={styles.content}>
             <Text style={[styles.name, { color: textColor }]} numberOfLines={1}>
               {renewal.name}

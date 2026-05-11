@@ -1,9 +1,5 @@
-/**
- * Learn more about light and dark modes:
- * https://docs.expo.dev/guides/color-schemes/
- */
-
-import { Colors } from '@/constants/theme';
+import { Platform } from 'react-native';
+import { Colors, WebColors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
 export function useThemeColor(
@@ -11,6 +7,19 @@ export function useThemeColor(
   colorName: keyof typeof Colors.light & keyof typeof Colors.dark
 ) {
   const theme = useColorScheme() ?? 'light';
+
+  // On web, always use dark theme colors from the new system
+  if (Platform.OS === 'web') {
+    const webColors: Record<string, string> = {
+      text: WebColors.text,
+      background: WebColors.background,
+      tint: WebColors.tint,
+      icon: WebColors.icon,
+    };
+    const colorFromProps = props.dark ?? props.light;
+    return colorFromProps ?? webColors[colorName] ?? WebColors.text;
+  }
+
   const colorFromProps = props[theme];
 
   if (colorFromProps) {

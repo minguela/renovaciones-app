@@ -7,6 +7,7 @@ import {
   Text,
   Alert,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -28,6 +29,8 @@ import {
   generateId,
 } from '@/types/renewal';
 
+const isWeb = Platform.OS === 'web';
+
 export default function RenewalFormScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -38,7 +41,9 @@ export default function RenewalFormScreen() {
   const [saving, setSaving] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
 
-  const backgroundColor = useThemeColor({ light: '#F2F2F7', dark: '#2C2C2E' }, 'background');
+  const backgroundColor = isWeb
+    ? 'rgba(186, 214, 247, 0.03)'
+    : useThemeColor({ light: '#F2F2F7', dark: '#2C2C2E' }, 'background');
   const textColor = useThemeColor({ light: '#000000', dark: '#FFFFFF' }, 'text');
 
   const [formData, setFormData] = useState<RenewalFormData>({
@@ -171,23 +176,31 @@ export default function RenewalFormScreen() {
     );
   }
 
+  const accentColor = isWeb ? '#b6d9fc' : '#007AFF';
+  const secondaryText = isWeb ? '#9da7ba' : '#8E8E93';
+  const labelColor = isWeb ? '#d1e4fa' : '#3C3C43';
+
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, isWeb && styles.webContainer]}>
       <Stack.Screen
         options={{
           title: isEditing ? 'Editar Renovación' : 'Nueva Renovación',
           headerLeft: () => (
             <TouchableOpacity onPress={() => router.back()}>
-              <Text style={styles.headerButton}>Cancelar</Text>
+              <Text style={[styles.headerButton, { color: accentColor }]}>Cancelar</Text>
             </TouchableOpacity>
           ),
         }}
       />
 
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={isWeb ? styles.webScrollContent : undefined}
+      >
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Información básica</Text>
-          
+          <Text style={[styles.sectionTitle, { color: secondaryText }]}>Información básica</Text>
+
           <Input
             label="Nombre *"
             placeholder="Ej: Seguro de coche"
@@ -213,23 +226,23 @@ export default function RenewalFormScreen() {
               keyboardType="numeric"
               style={[styles.input, { flex: 1 }]}
             />
-            
+
             <View style={[styles.pickerContainer, { flex: 1, marginLeft: 12 }]}>
-              <Text style={styles.label}>Moneda</Text>
+              <Text style={[styles.label, { color: labelColor }]}>Moneda</Text>
               <View style={[styles.picker, { backgroundColor }]}>
                 {CURRENCY_OPTIONS.map((currency) => (
                   <TouchableOpacity
                     key={currency.value}
                     style={[
                       styles.currencyOption,
-                      formData.currency === currency.value && styles.currencyOptionSelected,
+                      formData.currency === currency.value && (isWeb ? styles.currencyOptionSelectedWeb : styles.currencyOptionSelected),
                     ]}
                     onPress={() => updateFormData('currency', currency.value)}
                   >
                     <Text
                       style={[
                         styles.currencyText,
-                        formData.currency === currency.value && styles.currencyTextSelected,
+                        formData.currency === currency.value && (isWeb ? styles.currencyTextSelectedWeb : styles.currencyTextSelected),
                       ]}
                     >
                       {currency.symbol}
@@ -242,16 +255,16 @@ export default function RenewalFormScreen() {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Tipo y frecuencia</Text>
-          
-          <Text style={styles.label}>Tipo</Text>
+          <Text style={[styles.sectionTitle, { color: secondaryText }]}>Tipo y frecuencia</Text>
+
+          <Text style={[styles.label, { color: labelColor }]}>Tipo</Text>
           <View style={styles.optionsRow}>
             {RENEWAL_TYPES.map((type) => (
               <TouchableOpacity
                 key={type.value}
                 style={[
                   styles.typeOption,
-                  formData.type === type.value && styles.typeOptionSelected,
+                  formData.type === type.value && (isWeb ? styles.typeOptionSelectedWeb : styles.typeOptionSelected),
                   { backgroundColor },
                 ]}
                 onPress={() => {
@@ -262,12 +275,12 @@ export default function RenewalFormScreen() {
                 <IconSymbol
                   name={type.icon as any}
                   size={20}
-                  color={formData.type === type.value ? '#007AFF' : '#8E8E93'}
+                  color={formData.type === type.value ? accentColor : secondaryText}
                 />
                 <Text
                   style={[
                     styles.typeText,
-                    formData.type === type.value && styles.typeTextSelected,
+                    formData.type === type.value && (isWeb ? styles.typeTextSelectedWeb : styles.typeTextSelected),
                   ]}
                 >
                   {type.label}
@@ -276,21 +289,21 @@ export default function RenewalFormScreen() {
             ))}
           </View>
 
-          <Text style={[styles.label, { marginTop: 16 }]}>Frecuencia</Text>
+          <Text style={[styles.label, { marginTop: 16, color: labelColor }]}>Frecuencia</Text>
           <View style={[styles.picker, { backgroundColor }]}>
             {RENEWAL_FREQUENCIES.map((freq) => (
               <TouchableOpacity
                 key={freq.value}
                 style={[
                   styles.freqOption,
-                  formData.frequency === freq.value && styles.freqOptionSelected,
+                  formData.frequency === freq.value && (isWeb ? styles.freqOptionSelectedWeb : styles.freqOptionSelected),
                 ]}
                 onPress={() => updateFormData('frequency', freq.value)}
               >
                 <Text
                   style={[
                     styles.freqText,
-                    formData.frequency === freq.value && styles.freqTextSelected,
+                    formData.frequency === freq.value && (isWeb ? styles.freqTextSelectedWeb : styles.freqTextSelected),
                   ]}
                 >
                   {freq.label}
@@ -301,15 +314,15 @@ export default function RenewalFormScreen() {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Fecha y color</Text>
-          
-          <Text style={styles.label}>Fecha de renovación</Text>
+          <Text style={[styles.sectionTitle, { color: secondaryText }]}>Fecha y color</Text>
+
+          <Text style={[styles.label, { color: labelColor }]}>Fecha de renovación</Text>
           <TouchableOpacity
             style={[styles.dateButton, { backgroundColor }]}
             onPress={() => setShowDatePicker(true)}
           >
-            <IconSymbol name="calendar" size={20} color="#007AFF" />
-            <Text style={styles.dateText}>
+            <IconSymbol name="calendar" size={20} color={accentColor} />
+            <Text style={[styles.dateText, { color: textColor }]}>
               {formData.renewalDate.toLocaleDateString('es-ES', {
                 weekday: 'long',
                 year: 'numeric',
@@ -329,7 +342,7 @@ export default function RenewalFormScreen() {
             />
           )}
 
-          <Text style={[styles.label, { marginTop: 16 }]}>Color</Text>
+          <Text style={[styles.label, { marginTop: 16, color: labelColor }]}>Color</Text>
           <View style={styles.colorRow}>
             {COLORS.map((color) => (
               <TouchableOpacity
@@ -350,14 +363,14 @@ export default function RenewalFormScreen() {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Notificaciones</Text>
-          
+          <Text style={[styles.sectionTitle, { color: secondaryText }]}>Notificaciones</Text>
+
           <View style={styles.notificationRow}>
-            <Text style={styles.label}>Activar notificaciones</Text>
+            <Text style={[styles.label, { color: labelColor }]}>Activar notificaciones</Text>
             <TouchableOpacity
               style={[
                 styles.toggle,
-                formData.notificationEnabled && styles.toggleActive,
+                formData.notificationEnabled && (isWeb ? styles.toggleActiveWeb : styles.toggleActive),
               ]}
               onPress={() => updateFormData('notificationEnabled', !formData.notificationEnabled)}
             >
@@ -372,21 +385,21 @@ export default function RenewalFormScreen() {
 
           {formData.notificationEnabled && (
             <View style={styles.notificationDaysRow}>
-              <Text style={styles.label}>Avisar</Text>
+              <Text style={[styles.label, { color: labelColor }]}>Avisar</Text>
               <View style={[styles.daysPicker, { backgroundColor }]}>
                 {[1, 3, 7, 14, 30].map((days) => (
                   <TouchableOpacity
                     key={days}
                     style={[
                       styles.dayOption,
-                      formData.notificationDaysBefore === days && styles.dayOptionSelected,
+                      formData.notificationDaysBefore === days && (isWeb ? styles.dayOptionSelectedWeb : styles.dayOptionSelected),
                     ]}
                     onPress={() => updateFormData('notificationDaysBefore', days)}
                   >
                     <Text
                       style={[
                         styles.dayText,
-                        formData.notificationDaysBefore === days && styles.dayTextSelected,
+                        formData.notificationDaysBefore === days && (isWeb ? styles.dayTextSelectedWeb : styles.dayTextSelected),
                       ]}
                     >
                       {days}d
@@ -394,13 +407,13 @@ export default function RenewalFormScreen() {
                   </TouchableOpacity>
                 ))}
               </View>
-              <Text style={styles.label}>antes</Text>
+              <Text style={[styles.label, { color: labelColor }]}>antes</Text>
             </View>
           )}
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Notas</Text>
+          <Text style={[styles.sectionTitle, { color: secondaryText }]}>Notas</Text>
           <Input
             placeholder="Añade notas adicionales..."
             value={formData.notes}
@@ -416,7 +429,7 @@ export default function RenewalFormScreen() {
             onPress={handleSave}
             loading={saving}
           />
-          
+
           {isEditing && (
             <Button
               title="Eliminar renovación"
@@ -435,17 +448,25 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  webContainer: {
+    backgroundColor: '#05060f',
+  },
   centerContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
   headerButton: {
-    color: '#007AFF',
     fontSize: 16,
   },
   scrollView: {
     flex: 1,
+  },
+  webScrollContent: {
+    maxWidth: 720,
+    width: '100%',
+    alignSelf: 'center',
+    paddingHorizontal: 24,
   },
   section: {
     paddingHorizontal: 16,
@@ -454,7 +475,6 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#8E8E93',
     textTransform: 'uppercase',
     marginBottom: 12,
     marginTop: 4,
@@ -469,7 +489,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
     marginBottom: 6,
-    color: '#3C3C43',
   },
   pickerContainer: {
     marginBottom: 12,
@@ -493,6 +512,10 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 2,
   },
+  currencyOptionSelectedWeb: {
+    backgroundColor: 'rgba(102, 58, 243, 0.15)',
+    borderRadius: 6,
+  },
   currencyText: {
     fontSize: 16,
     fontWeight: '500',
@@ -500,6 +523,9 @@ const styles = StyleSheet.create({
   },
   currencyTextSelected: {
     color: '#007AFF',
+  },
+  currencyTextSelectedWeb: {
+    color: '#b6d9fc',
   },
   optionsRow: {
     flexDirection: 'row',
@@ -517,12 +543,21 @@ const styles = StyleSheet.create({
   typeOptionSelected: {
     backgroundColor: '#007AFF15',
   },
+  typeOptionSelectedWeb: {
+    backgroundColor: 'rgba(102, 58, 243, 0.1)',
+    borderColor: 'rgba(102, 58, 243, 0.3)',
+    borderWidth: 1,
+  },
   typeText: {
     fontSize: 14,
     color: '#3C3C43',
   },
   typeTextSelected: {
     color: '#007AFF',
+    fontWeight: '500',
+  },
+  typeTextSelectedWeb: {
+    color: '#b6d9fc',
     fontWeight: '500',
   },
   freqOption: {
@@ -539,12 +574,20 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 2,
   },
+  freqOptionSelectedWeb: {
+    backgroundColor: 'rgba(102, 58, 243, 0.15)',
+    borderRadius: 6,
+  },
   freqText: {
     fontSize: 14,
     color: '#8E8E93',
   },
   freqTextSelected: {
     color: '#007AFF',
+    fontWeight: '500',
+  },
+  freqTextSelectedWeb: {
+    color: '#b6d9fc',
     fontWeight: '500',
   },
   dateButton: {
@@ -557,7 +600,6 @@ const styles = StyleSheet.create({
   },
   dateText: {
     fontSize: 16,
-    color: '#000000',
   },
   colorRow: {
     flexDirection: 'row',
@@ -588,11 +630,14 @@ const styles = StyleSheet.create({
     width: 50,
     height: 30,
     borderRadius: 15,
-    backgroundColor: '#E5E5EA',
+    backgroundColor: isWeb ? '#2C2C2E' : '#E5E5EA',
     padding: 2,
   },
   toggleActive: {
     backgroundColor: '#34C759',
+  },
+  toggleActiveWeb: {
+    backgroundColor: '#663af3',
   },
   toggleKnob: {
     width: 26,
@@ -632,12 +677,20 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 2,
   },
+  dayOptionSelectedWeb: {
+    backgroundColor: 'rgba(102, 58, 243, 0.15)',
+    borderRadius: 6,
+  },
   dayText: {
     fontSize: 14,
     color: '#8E8E93',
   },
   dayTextSelected: {
     color: '#007AFF',
+    fontWeight: '500',
+  },
+  dayTextSelectedWeb: {
+    color: '#b6d9fc',
     fontWeight: '500',
   },
   buttonContainer: {
