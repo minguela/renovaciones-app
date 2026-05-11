@@ -17,6 +17,7 @@ import { ThemedView } from '@/components/themed-view';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { CatalogPicker } from '@/components/CatalogPicker';
 import { useRenewals } from '@/hooks/useRenewals';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import {
@@ -40,6 +41,7 @@ export default function RenewalFormScreen() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [catalogVisible, setCatalogVisible] = useState(false);
 
   const backgroundColor = isWeb
     ? 'rgba(186, 214, 247, 0.03)'
@@ -168,6 +170,26 @@ export default function RenewalFormScreen() {
     setFormData(prev => ({ ...prev, [key]: value }));
   };
 
+  const handleCatalogSelect = (data: {
+    name: string;
+    type: RenewalFormData['type'];
+    frequency: RenewalFormData['frequency'];
+    cost: string;
+    provider: string;
+    icon: string;
+  }) => {
+    setFormData(prev => ({
+      ...prev,
+      name: data.name,
+      type: data.type,
+      frequency: data.frequency,
+      cost: data.cost,
+      provider: data.provider,
+      icon: data.icon,
+    }));
+    setCatalogVisible(false);
+  };
+
   if (loading) {
     return (
       <ThemedView style={styles.centerContainer}>
@@ -200,6 +222,19 @@ export default function RenewalFormScreen() {
       >
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: secondaryText }]}>Información básica</Text>
+
+          {!isEditing && (
+            <TouchableOpacity
+              style={[styles.catalogButton, { backgroundColor }]}
+              onPress={() => setCatalogVisible(true)}
+              activeOpacity={0.7}
+            >
+              <IconSymbol name="magnifyingglass" size={18} color={accentColor} />
+              <Text style={[styles.catalogButtonText, { color: accentColor }]}>
+                Elegir del catálogo
+              </Text>
+            </TouchableOpacity>
+          )}
 
           <Input
             label="Nombre *"
@@ -440,6 +475,12 @@ export default function RenewalFormScreen() {
           )}
         </View>
       </ScrollView>
+
+      <CatalogPicker
+        visible={catalogVisible}
+        onClose={() => setCatalogVisible(false)}
+        onSelect={handleCatalogSelect}
+      />
     </SafeAreaView>
   );
 }
@@ -696,5 +737,21 @@ const styles = StyleSheet.create({
   buttonContainer: {
     paddingHorizontal: 16,
     paddingVertical: 24,
+  },
+  catalogButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    gap: 8,
+    marginBottom: 16,
+    borderWidth: isWeb ? 1 : 0,
+    borderColor: isWeb ? 'rgba(186, 215, 247, 0.12)' : 'transparent',
+  },
+  catalogButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
   },
 });
