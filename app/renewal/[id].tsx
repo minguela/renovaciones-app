@@ -21,6 +21,7 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { CatalogPicker } from '@/components/CatalogPicker';
 import { AttachmentsUploader } from '@/components/AttachmentsUploader';
 import { useRenewals } from '@/hooks/useRenewals';
+import { useAuth } from '@/hooks/useAuth';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import {
   type Renewal,
@@ -43,7 +44,8 @@ export default function RenewalFormScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const isEditing = id !== 'new';
-  const { addRenewal, updateRenewal, deleteRenewal, getRenewalById, getHistoryForRenewal, userId } = useRenewals();
+  const { user } = useAuth();
+  const { addRenewal, updateRenewal, deleteRenewal, getRenewalById, getHistoryForRenewal } = useRenewals(user?.id);
 
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -505,9 +507,9 @@ export default function RenewalFormScreen() {
 
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: secondaryText }]}>Archivos adjuntos</Text>
-          {userId ? (
+          {user?.id ? (
             <AttachmentsUploader
-              userId={userId}
+              userId={user.id}
               renewalId={isEditing ? id : 'temp'}
               attachments={formData.attachments || []}
               onAttachmentsChange={(attachments) => updateFormData('attachments', attachments)}

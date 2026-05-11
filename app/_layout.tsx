@@ -9,6 +9,7 @@ import * as Linking from 'expo-linking';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { FontLoader } from '@/components/FontLoader';
 import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/hooks/useAuth';
 import { ToastProvider } from '@/components/ui/ToastContext';
 import { ToastContainer } from '@/components/ui/Toast';
 
@@ -19,6 +20,9 @@ export const unstable_settings = {
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   const isWeb = Platform.OS === 'web';
+
+  // Initialize global auth listener
+  useAuth();
 
   // On web, force dark theme
   const activeTheme = isWeb ? DarkTheme : (colorScheme === 'dark' ? DarkTheme : DefaultTheme);
@@ -82,8 +86,8 @@ export default function RootLayout() {
           />
         </Stack>
         <StatusBar style={isWeb ? 'light' : 'auto'} />
-        <ToastContainer />
       </ThemeProvider>
+      <ToastContainer />
     </ToastProvider>
   );
 }

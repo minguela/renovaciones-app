@@ -1,28 +1,18 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { Renewal, RenewalHistory } from '@/types/renewal';
-import { supabase, getCurrentUser, getRenewalHistory, addRenewalHistory } from '@/lib/supabase';
+import { supabase, getRenewalHistory, addRenewalHistory } from '@/lib/supabase';
 
-export function useRenewals() {
+export function useRenewals(userId?: string | null) {
   const [renewals, setRenewals] = useState<Renewal[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [userId, setUserId] = useState<string | null>(null);
-
-  // Get current user
-  useEffect(() => {
-    const getUser = async () => {
-      const user = await getCurrentUser();
-      if (user) {
-        setUserId(user.id);
-      } else {
-        setLoading(false);
-      }
-    };
-    getUser();
-  }, []);
 
   const loadRenewals = useCallback(async () => {
-    if (!userId) return;
+    if (!userId) {
+      setRenewals([]);
+      setLoading(false);
+      return;
+    }
 
     try {
       setLoading(true);
@@ -72,10 +62,8 @@ export function useRenewals() {
   }, [userId]);
 
   useEffect(() => {
-    if (userId) {
-      loadRenewals();
-    }
-  }, [userId, loadRenewals]);
+    loadRenewals();
+  }, [loadRenewals]);
 
   const addRenewal = useCallback(async (renewal: Renewal) => {
     if (!userId) return false;
@@ -216,7 +204,6 @@ export function useRenewals() {
     renewals,
     loading,
     error,
-    userId,
     addRenewal,
     updateRenewal,
     deleteRenewal,

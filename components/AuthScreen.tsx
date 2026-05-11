@@ -6,12 +6,10 @@ import {
   TextInput,
   TouchableOpacity,
   ActivityIndicator,
-  Alert,
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-import { signIn, signUp, signInWithApple, signInWithGoogle } from '@/lib/supabase';
 import { Button } from '@/components/ui/Button';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useThemeColor } from '@/hooks/use-theme-color';
@@ -19,85 +17,53 @@ import { useThemeColor } from '@/hooks/use-theme-color';
 const isWeb = Platform.OS === 'web';
 
 interface AuthScreenProps {
-  onAuthSuccess: () => void;
+  onSignIn: (email: string, password: string) => void;
+  onSignUp: (email: string, password: string) => void;
+  onGoogleSignIn: () => void;
+  onAppleSignIn: () => void;
+  loading?: boolean;
+  authMessage?: string | null;
+  authError?: string | null;
 }
 
-export function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
+export function AuthScreen({
+  onSignIn,
+  onSignUp,
+  onGoogleSignIn,
+  onAppleSignIn,
+  loading = false,
+  authMessage,
+  authError,
+}: AuthScreenProps) {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [oauthLoading, setOauthLoading] = useState<'apple' | 'google' | null>(null);
+  const [validationError, setValidationError] = useState<string | null>(null);
 
   const textColor = useThemeColor({ light: '#000000', dark: '#FFFFFF' }, 'text');
   const secondaryTextColor = isWeb ? '#9da7ba' : useThemeColor({ light: '#666666', dark: '#999999' }, 'text');
 
-  const isAuthLoading = loading || oauthLoading !== null;
+  const handleSubmit = () => {
+    setValidationError(null);
 
-  const handleSubmit = async () => {
     if (!email || !password) {
-      Alert.alert('Error', 'Por favor completa todos los campos');
+      setValidationError('Por favor completa todos los campos');
       return;
     }
 
     if (password.length < 6) {
-      Alert.alert('Error', 'La contraseña debe tener al menos 6 caracteres');
+      setValidationError('La contraseña debe tener al menos 6 caracteres');
       return;
     }
 
-    setLoading(true);
-
-    try {
-      const { error } = isLogin
-        ? await signIn(email, password)
-        : await signUp(email, password);
-
-      if (error) {
-        Alert.alert('Error', error.message);
-      } else {
-        if (!isLogin) {
-          Alert.alert('Éxito', 'Cuenta creada. Revisa tu email para confirmar.');
-        }
-        onAuthSuccess();
-      }
-    } catch (err) {
-      Alert.alert('Error', 'Ocurrió un error inesperado');
-    } finally {
-      setLoading(false);
+    if (isLogin) {
+      onSignIn(email, password);
+    } else {
+      onSignUp(email, password);
     }
   };
 
-  const handleAppleSignIn = async () => {
-    setOauthLoading('apple');
-    try {
-      const { error } = await signInWithApple();
-      if (error) {
-        Alert.alert('Error', error.message);
-      } else {
-        onAuthSuccess();
-      }
-    } catch (err) {
-      Alert.alert('Error', 'Ocurrió un error inesperado');
-    } finally {
-      setOauthLoading(null);
-    }
-  };
-
-  const handleGoogleSignIn = async () => {
-    setOauthLoading('google');
-    try {
-      const { error } = await signInWithGoogle();
-      if (error) {
-        Alert.alert('Error', error.message);
-      } else {
-        onAuthSuccess();
-      }
-    } catch (err) {
-      Alert.alert('Error', 'Ocurrió un error inesperado');
-    } finally {
-      setOauthLoading(null);
-    }
-  };
+  const displayedError = validationError || authError || null;
 
   return (
     <SafeAreaView style={[styles.container, isWeb && styles.webContainer]}>
@@ -113,6 +79,18 @@ export function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
           </Text>
         </View>
 
+        {authMessage ? (
+          <View style={[styles.banner, styles.bannerSuccess, isWeb && styles.webBannerSuccess]}>
+            <Text style={[styles.bannerText, styles.bannerSuccessText]}>{authMessage}</Text>
+          </View>
+        ) : null}
+
+        {displayedError ? (
+          <View style={[styles.banner, styles.bannerError, isWeb && styles.webBannerError]}>
+            <Text style={[styles.bannerText, styles.bannerErrorText]}>{displayedError}</Text>
+          </View>
+        ) : null}
+
         <View style={[styles.oauthContainer, isWeb && styles.webOAuthContainer]}>
           <TouchableOpacity
             style={[
@@ -120,11 +98,11 @@ export function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
               styles.appleButton,
               isWeb && styles.webOAuthButton,
             ]}
-            onPress={handleAppleSignIn}
-            disabled={isAuthLoading}
+            onPress={onAppleSignIn}
+            disabled={loading}
             activeOpacity={0.8}
           >
-            {oauthLoading === 'apple' ? (
+            {loading ? (
               <ActivityIndicator color="#FFFFFF" />
             ) : (
               <>
@@ -140,11 +118,11 @@ export function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
               styles.googleButton,
               isWeb && styles.webOAuthButton,
             ]}
-            onPress={handleGoogleSignIn}
-            disabled={isAuthLoading}
+            onPress={onGoogleSignIn}
+            disabled={loading}
             activeOpacity={0.8}
           >
-            {oauthLoading === 'google' ? (
+            {loading ? (
               <ActivityIndicator color="#333333" />
             ) : (
               <>
@@ -181,7 +159,7 @@ export function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
               onChangeText={setEmail}
               keyboardType="email-address"
               autoCapitalize="none"
-              editable={!isAuthLoading}
+              editable={!loading}
             />
           </View>
 
@@ -203,7 +181,7 @@ export function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
               value={password}
               onChangeText={setPassword}
               secureTextEntry
-              editable={!isAuthLoading}
+              editable={!loading}
             />
           </View>
 
@@ -211,7 +189,7 @@ export function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
             title={isLogin ? 'Iniciar sesión' : 'Crear cuenta'}
             onPress={handleSubmit}
             loading={loading}
-            disabled={isAuthLoading}
+            disabled={loading}
             size="lg"
           />
         </View>
@@ -220,7 +198,10 @@ export function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
           <Text style={[styles.footerText, { color: secondaryTextColor }]}>
             {isLogin ? '¿No tienes cuenta?' : '¿Ya tienes cuenta?'}
           </Text>
-          <TouchableOpacity onPress={() => setIsLogin(!isLogin)}>
+          <TouchableOpacity onPress={() => {
+            setIsLogin(!isLogin);
+            setValidationError(null);
+          }}>
             <Text style={[styles.footerLink, { color: isWeb ? '#b6d9fc' : '#007AFF' }]}>
               {isLogin ? 'Regístrate' : 'Inicia sesión'}
             </Text>
@@ -264,6 +245,41 @@ const styles = StyleSheet.create({
     fontSize: 16,
     textAlign: 'center',
     lineHeight: 24,
+  },
+  banner: {
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    marginBottom: 16,
+  },
+  bannerSuccess: {
+    backgroundColor: '#e6f9ed',
+    borderWidth: 1,
+    borderColor: '#2ecc71',
+  },
+  webBannerSuccess: {
+    backgroundColor: 'rgba(46, 204, 113, 0.1)',
+    borderColor: 'rgba(46, 204, 113, 0.4)',
+  },
+  bannerError: {
+    backgroundColor: '#fdecea',
+    borderWidth: 1,
+    borderColor: '#e74c3c',
+  },
+  webBannerError: {
+    backgroundColor: 'rgba(231, 76, 60, 0.1)',
+    borderColor: 'rgba(231, 76, 60, 0.4)',
+  },
+  bannerText: {
+    fontSize: 14,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  bannerSuccessText: {
+    color: '#1e8449',
+  },
+  bannerErrorText: {
+    color: '#c0392b',
   },
   oauthContainer: {
     gap: 12,
