@@ -33,6 +33,7 @@ const MAPPING = {
   'checkmark': 'check',
   'magnifyingglass': 'search',
   'calendar': 'calendar-today',
+  'apple.logo': 'phone-iphone',
 } as IconMapping;
 
 /**
