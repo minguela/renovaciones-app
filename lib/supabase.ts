@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { Platform } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
-import type { Renewal } from '@/types/renewal';
+import type { Renewal, RenewalHistory } from '@/types/renewal';
 
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://grgmuqaigqgrbjvzjecn.supabase.co';
 const supabaseKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-anon-key';
@@ -86,6 +86,17 @@ export async function signInWithGoogle() {
   });
 
   if (error) return { data, error };
+
+  if (Platform.OS === 'web' && data?.url) {
+    // Fallback: if Supabase didn't auto-redirect, do it manually
+    if (typeof window !== 'undefined' && window.location.href === data.url) {
+      return { data, error };
+    }
+    // If we're still here and have a URL, redirect manually
+    if (typeof window !== 'undefined' && data.url) {
+      window.location.href = data.url;
+    }
+  }
 
   if (Platform.OS !== 'web' && data?.url) {
     const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
