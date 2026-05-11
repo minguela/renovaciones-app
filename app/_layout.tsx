@@ -9,6 +9,8 @@ import * as Linking from 'expo-linking';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { FontLoader } from '@/components/FontLoader';
 import { supabase } from '@/lib/supabase';
+import { ToastProvider } from '@/components/ui/ToastContext';
+import { ToastContainer } from '@/components/ui/Toast';
 
 export const unstable_settings = {
   anchor: '(tabs)',
@@ -66,7 +68,7 @@ export default function RootLayout() {
   }, [isWeb]);
 
   return (
-    <>
+    <ToastProvider>
       <FontLoader />
       <ThemeProvider value={activeTheme}>
         <Stack>
@@ -80,7 +82,8 @@ export default function RootLayout() {
           />
         </Stack>
         <StatusBar style={isWeb ? 'light' : 'auto'} />
+        <ToastContainer />
       </ThemeProvider>
-    </>
+    </ToastProvider>
   );
 }

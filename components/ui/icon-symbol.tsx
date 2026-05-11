@@ -34,6 +34,8 @@ const MAPPING = {
   'magnifyingglass': 'search',
   'calendar': 'calendar-today',
   'apple.logo': 'phone-iphone',
+  'exclamationmark.triangle': 'warning',
+  'info.circle': 'info',
 } as IconMapping;
 
 /**
