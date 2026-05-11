@@ -11,8 +11,8 @@ import { Button } from '@/components/ui/Button';
 import { AuthScreen } from '@/components/AuthScreen';
 import { NotificationSettings } from '@/components/NotificationSettings';
 import { useRenewals } from '@/hooks/useRenewals';
+import { useAuth } from '@/hooks/useAuth';
 import { useThemeColor } from '@/hooks/use-theme-color';
-import { signOut, getCurrentUser } from '@/lib/supabase';
 import { calculateYearlyCost, calculateMonthlyCost, groupByMonth } from '@/lib/calculations';
 import { getDaysUntilRenewal, type Renewal, STATUS_OPTIONS } from '@/types/renewal';
 import { exportRenewalsToCSV, exportToCSVFile } from '@/lib/export';
@@ -30,24 +30,25 @@ const FILTER_CHIPS: { value: FilterStatus; label: string }[] = [
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { renewals, loading, error, refresh, isAuthenticated } = useRenewals();
-  const [user, setUser] = useState<any>(null);
+  const {
+    user,
+    isAuthenticated,
+    loading: authLoading,
+    signOut,
+    signIn,
+    signUp,
+    signInWithGoogle,
+    signInWithApple,
+    authMessage,
+    authError,
+  } = useAuth();
+  const { renewals, loading, error, refresh } = useRenewals(user?.id);
   const [showSettings, setShowSettings] = useState(false);
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('active');
   const tintColor = useThemeColor({ light: '#007AFF', dark: '#0A84FF' }, 'tint');
 
-  useEffect(() => {
-    checkUser();
-  }, []);
-
-  const checkUser = async () => {
-    const currentUser = await getCurrentUser();
-    setUser(currentUser);
-  };
-
   const handleSignOut = async () => {
     await signOut();
-    setUser(null);
   };
 
   const handleExportCSV = async () => {
@@ -113,8 +114,26 @@ export default function HomeScreen() {
       }));
   }, [renewals]);
 
-  if (!user) {
-    return <AuthScreen onAuthSuccess={() => checkUser()} />;
+  if (authLoading) {
+    return (
+      <ThemedView style={styles.centerContainer}>
+        <ActivityIndicator size="large" color={tintColor} />
+      </ThemedView>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <AuthScreen
+        onSignIn={signIn}
+        onSignUp={signUp}
+        onGoogleSignIn={signInWithGoogle}
+        onAppleSignIn={signInWithApple}
+        loading={authLoading}
+        authMessage={authMessage}
+        authError={authError}
+      />
+    );
   }
 
   if (loading && renewals.length === 0) {
@@ -268,6 +287,7 @@ export default function HomeScreen() {
                     key={chip.value}
                     style={[
                       styles.filterChip,
+                      !isActive && isWeb && styles.filterChipWeb,
                       isActive && (isWeb ? styles.filterChipActiveWeb : styles.filterChipActive),
                     ]}
                     onPress={() => setFilterStatus(chip.value)}
@@ -275,6 +295,7 @@ export default function HomeScreen() {
                     <ThemedText
                       style={[
                         styles.filterChipText,
+                        !isActive && isWeb && styles.filterChipTextWeb,
                         isActive && (isWeb ? styles.filterChipTextActiveWeb : styles.filterChipTextActive),
                       ]}
                     >
@@ -508,6 +529,11 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     backgroundColor: '#E5E5EA',
   },
+  filterChipWeb: {
+    backgroundColor: 'rgba(186, 214, 247, 0.06)',
+    borderWidth: 1,
+    borderColor: 'rgba(186, 215, 247, 0.12)',
+  },
   filterChipActive: {
     backgroundColor: '#007AFF15',
   },
@@ -519,6 +545,9 @@ const styles = StyleSheet.create({
   filterChipText: {
     fontSize: 13,
     color: '#3C3C43',
+  },
+  filterChipTextWeb: {
+    color: '#9da7ba',
   },
   filterChipTextActive: {
     color: '#007AFF',
