@@ -15,6 +15,7 @@ import { useThemeColor } from '@/hooks/use-theme-color';
 import { signOut, getCurrentUser } from '@/lib/supabase';
 import { calculateYearlyCost, calculateMonthlyCost, groupByMonth } from '@/lib/calculations';
 import { getDaysUntilRenewal, type Renewal, STATUS_OPTIONS } from '@/types/renewal';
+import { exportRenewalsToCSV, exportToCSVFile } from '@/lib/export';
 
 const isWeb = Platform.OS === 'web';
 
@@ -47,6 +48,13 @@ export default function HomeScreen() {
   const handleSignOut = async () => {
     await signOut();
     setUser(null);
+  };
+
+  const handleExportCSV = async () => {
+    if (filteredRenewals.length === 0) return;
+    const csv = exportRenewalsToCSV(filteredRenewals);
+    const dateStr = new Date().toISOString().split('T')[0];
+    await exportToCSVFile(csv, `renovaciones-${dateStr}.csv`);
   };
 
   const filteredRenewals = useMemo(() => {
@@ -124,6 +132,22 @@ export default function HomeScreen() {
           title: 'Mis Renovaciones',
           headerRight: () => (
             <View style={{ flexDirection: 'row', gap: 8 }}>
+              {isWeb ? (
+                <TouchableOpacity
+                  style={styles.exportButtonWeb}
+                  onPress={handleExportCSV}
+                  activeOpacity={0.8}
+                >
+                  <ThemedText style={styles.exportButtonWebText}>Exportar CSV</ThemedText>
+                </TouchableOpacity>
+              ) : (
+                <Button
+                  title="Exportar"
+                  onPress={handleExportCSV}
+                  variant="secondary"
+                  size="sm"
+                />
+              )}
               <Button
                 title="⚙️"
                 onPress={() => setShowSettings(!showSettings)}
@@ -278,6 +302,15 @@ export default function HomeScreen() {
       </ScrollView>
 
       <View style={styles.fabContainer}>
+        {isWeb && (
+          <TouchableOpacity
+            style={styles.exportButtonWeb}
+            onPress={handleExportCSV}
+            activeOpacity={0.8}
+          >
+            <ThemedText style={styles.exportButtonWebText}>Exportar CSV</ThemedText>
+          </TouchableOpacity>
+        )}
         <Button
           title="+ Añadir Renovación"
           onPress={() => router.push('/renewal/new')}
@@ -501,5 +534,18 @@ const styles = StyleSheet.create({
   fabContainer: {
     paddingHorizontal: isWeb ? 0 : 16,
     paddingVertical: 16,
+  },
+  exportButtonWeb: {
+    backgroundColor: '#663af3',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 9999,
+    alignSelf: 'flex-start',
+    marginBottom: 8,
+  },
+  exportButtonWebText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '600',
   },
 });

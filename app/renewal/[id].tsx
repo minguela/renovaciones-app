@@ -19,11 +19,13 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { CatalogPicker } from '@/components/CatalogPicker';
+import { AttachmentsUploader } from '@/components/AttachmentsUploader';
 import { useRenewals } from '@/hooks/useRenewals';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import {
   type Renewal,
   type RenewalFormData,
+  type RenewalHistory,
   RENEWAL_TYPES,
   RENEWAL_FREQUENCIES,
   CURRENCY_OPTIONS,
@@ -32,6 +34,7 @@ import {
   PAYMENT_METHODS,
   TAG_OPTIONS,
   generateId,
+  formatCurrency,
 } from '@/types/renewal';
 
 const isWeb = Platform.OS === 'web';
@@ -40,13 +43,16 @@ export default function RenewalFormScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const isEditing = id !== 'new';
-  const { addRenewal, updateRenewal, deleteRenewal, getRenewalById } = useRenewals();
+  const { addRenewal, updateRenewal, deleteRenewal, getRenewalById, getHistoryForRenewal, userId } = useRenewals();
 
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showContractEndDatePicker, setShowContractEndDatePicker] = useState(false);
   const [catalogVisible, setCatalogVisible] = useState(false);
+  const [history, setHistory] = useState<RenewalHistory[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [previousRenewal, setPreviousRenewal] = useState<Renewal | null>(null);
 
   const backgroundColor = isWeb
     ? 'rgba(186, 214, 247, 0.03)'
@@ -72,6 +78,7 @@ export default function RenewalFormScreen() {
     bankAccount: '',
     tags: [],
     contractEndDate: undefined,
+    attachments: [],
   });
 
   useEffect(() => {
@@ -84,6 +91,7 @@ export default function RenewalFormScreen() {
     setLoading(true);
     const renewal = await getRenewalById(id);
     if (renewal) {
+      setPreviousRenewal(renewal);
       setFormData({
         name: renewal.name,
         type: renewal.type,
@@ -103,7 +111,13 @@ export default function RenewalFormScreen() {
         bankAccount: renewal.bankAccount || '',
         tags: renewal.tags || [],
         contractEndDate: renewal.contractEndDate ? new Date(renewal.contractEndDate) : undefined,
+        attachments: renewal.attachments || [],
       });
+      // Load history
+      setHistoryLoading(true);
+      const hist = await getHistoryForRenewal(renewal.id);
+      setHistory(hist);
+      setHistoryLoading(false);
     }
     setLoading(false);
   };
@@ -142,10 +156,11 @@ export default function RenewalFormScreen() {
       bankAccount: formData.bankAccount?.trim() || undefined,
       tags: formData.tags || [],
       contractEndDate: formData.contractEndDate?.toISOString(),
+      attachments: formData.attachments || [],
     };
 
     const success = isEditing
-      ? await updateRenewal(renewalData)
+      ? await updateRenewal(renewalData, previousRenewal || undefined)
       : await addRenewal(renewalData);
 
     setSaving(false);
@@ -489,6 +504,20 @@ export default function RenewalFormScreen() {
         </View>
 
         <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: secondaryText }]}>Archivos adjuntos</Text>
+          {userId ? (
+            <AttachmentsUploader
+              userId={userId}
+              renewalId={isEditing ? id : 'temp'}
+              attachments={formData.attachments || []}
+              onAttachmentsChange={(attachments) => updateFormData('attachments', attachments)}
+            />
+          ) : (
+            <Text style={{ color: secondaryText }}>Inicia sesión para gestionar adjuntos</Text>
+          )}
+        </View>
+
+        <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: secondaryText }]}>Estado y pago</Text>
 
           <Text style={[styles.label, { color: labelColor }]}>Estado</Text>
@@ -641,6 +670,67 @@ export default function RenewalFormScreen() {
             />
           )}
         </View>
+
+        {isEditing && (
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: secondaryText }]}>Historial de precios</Text>
+            {historyLoading ? (
+              <ActivityIndicator size="small" color={accentColor} />
+            ) : history.length === 0 ? (
+              <Text style={[styles.emptyHistoryText, { color: secondaryText }]}>
+                No hay cambios de precio registrados
+              </Text>
+            ) : (
+              <View>
+                {history.map((item) => {
+                  const diff = item.newCost - item.oldCost;
+                  const diffPercent = item.oldCost !== 0 ? ((diff / item.oldCost) * 100).toFixed(1) : '0';
+                  const isIncrease = diff > 0;
+                  const diffColor = isIncrease ? '#FF3B30' : diff < 0 ? '#34C759' : secondaryText;
+                  const diffSymbol = isIncrease ? '+' : '';
+
+                  return (
+                    <View key={item.id} style={[styles.historyRow, isWeb && styles.historyRowWeb]}>
+                      <View style={styles.historyDateCol}>
+                        <Text style={[styles.historyDate, { color: textColor }]}>
+                          {new Date(item.changedAt).toLocaleDateString('es-ES', {
+                            day: '2-digit',
+                            month: 'short',
+                            year: 'numeric',
+                          })}
+                        </Text>
+                      </View>
+                      <View style={styles.historyCostCol}>
+                        <Text style={[styles.historyCost, { color: secondaryText }]}>
+                          {formatCurrency(item.oldCost, formData.currency)}
+                        </Text>
+                        <IconSymbol name="arrow.right" size={12} color={secondaryText} />
+                        <Text style={[styles.historyCost, { color: textColor }]}>
+                          {formatCurrency(item.newCost, formData.currency)}
+                        </Text>
+                      </View>
+                      <View style={styles.historyDiffCol}>
+                        <Text style={[styles.historyDiff, { color: diffColor }]}>
+                          {diffSymbol}{formatCurrency(diff, formData.currency)}
+                        </Text>
+                        <Text style={[styles.historyDiffPercent, { color: diffColor }]}>
+                          ({diffSymbol}{diffPercent}%)
+                        </Text>
+                      </View>
+                      {item.oldFrequency !== item.newFrequency && (
+                        <View style={styles.historyFreqChange}>
+                          <Text style={[styles.historyFreqText, { color: secondaryText }]}>
+                            {RENEWAL_FREQUENCIES.find(f => f.value === item.oldFrequency)?.label} → {RENEWAL_FREQUENCIES.find(f => f.value === item.newFrequency)?.label}
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+                  );
+                })}
+              </View>
+            )}
+          </View>
+        )}
 
         <View style={styles.buttonContainer}>
           <Button
@@ -1041,5 +1131,62 @@ const styles = StyleSheet.create({
   catalogButtonText: {
     fontSize: 15,
     fontWeight: '600',
+  },
+  emptyHistoryText: {
+    fontSize: 14,
+    fontStyle: 'italic',
+    textAlign: 'center',
+    paddingVertical: 12,
+  },
+  historyRow: {
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: isWeb ? 'rgba(186, 215, 247, 0.08)' : '#E5E5EA',
+  },
+  historyRowWeb: {
+    backgroundColor: 'rgba(186, 214, 247, 0.03)',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    marginBottom: 8,
+    borderBottomWidth: 0,
+  },
+  historyDateCol: {
+    marginBottom: 4,
+  },
+  historyDate: {
+    fontSize: 12,
+    fontWeight: '500',
+    opacity: 0.8,
+  },
+  historyCostCol: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 4,
+  },
+  historyCost: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  historyDiffCol: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  historyDiff: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  historyDiffPercent: {
+    fontSize: 12,
+    fontWeight: '500',
+    opacity: 0.9,
+  },
+  historyFreqChange: {
+    marginTop: 4,
+  },
+  historyFreqText: {
+    fontSize: 12,
+    fontStyle: 'italic',
   },
 });
