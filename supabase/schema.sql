@@ -48,6 +48,7 @@ BEGIN
   ALTER TABLE renewals ADD COLUMN IF NOT EXISTS tags TEXT[] DEFAULT '{}';
   ALTER TABLE renewals ADD COLUMN IF NOT EXISTS auto_renew BOOLEAN DEFAULT true;
   ALTER TABLE renewals ADD COLUMN IF NOT EXISTS contract_end_date DATE;
+  ALTER TABLE renewals ADD COLUMN IF NOT EXISTS attachments TEXT[] DEFAULT '{}';
 EXCEPTION
   WHEN duplicate_column THEN NULL;
 END $$;
@@ -133,5 +134,64 @@ CREATE TRIGGER on_auth_user_created
   FOR EACH ROW
   EXECUTE FUNCTION public.handle_new_user();
 
+-- Renewal history table
+CREATE TABLE IF NOT EXISTS renewal_history (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  renewal_id UUID REFERENCES renewals(id) ON DELETE CASCADE NOT NULL,
+  old_cost DECIMAL(10, 2),
+  new_cost DECIMAL(10, 2),
+  old_frequency TEXT,
+  new_frequency TEXT,
+  changed_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+ALTER TABLE renewal_history ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can view own renewal history" ON renewal_history;
+CREATE POLICY "Users can view own renewal history"
+  ON renewal_history FOR SELECT
+  USING (EXISTS (
+    SELECT 1 FROM renewals WHERE renewals.id = renewal_history.renewal_id AND renewals.user_id = auth.uid()
+  ));
+
+DROP POLICY IF EXISTS "Users can create own renewal history" ON renewal_history;
+CREATE POLICY "Users can create own renewal history"
+  ON renewal_history FOR INSERT
+  WITH CHECK (EXISTS (
+    SELECT 1 FROM renewals WHERE renewals.id = renewal_history.renewal_id AND renewals.user_id = auth.uid()
+  ));
+
+DROP POLICY IF EXISTS "Users can delete own renewal history" ON renewal_history;
+CREATE POLICY "Users can delete own renewal history"
+  ON renewal_history FOR DELETE
+  USING (EXISTS (
+    SELECT 1 FROM renewals WHERE renewals.id = renewal_history.renewal_id AND renewals.user_id = auth.uid()
+  ));
+
 -- Enable realtime for renewals
 ALTER TABLE renewals REPLICA IDENTITY FULL;
+ALTER TABLE renewal_history REPLICA IDENTITY FULL;
+
+-- Storage bucket for attachments
+-- Note: create the 'attachments' bucket manually in Supabase Dashboard > Storage
+-- Then run these policies:
+
+DROP POLICY IF EXISTS "Users can upload own attachments" ON storage.objects;
+CREATE POLICY "Users can upload own attachments"
+  ON storage.objects FOR INSERT
+  WITH CHECK (bucket_id = 'attachments' AND auth.uid() = owner);
+
+DROP POLICY IF EXISTS "Users can view own attachments" ON storage.objects;
+CREATE POLICY "Users can view own attachments"
+  ON storage.objects FOR SELECT
+  USING (bucket_id = 'attachments' AND auth.uid() = owner);
+
+DROP POLICY IF EXISTS "Users can delete own attachments" ON storage.objects;
+CREATE POLICY "Users can delete own attachments"
+  ON storage.objects FOR DELETE
+  USING (bucket_id = 'attachments' AND auth.uid() = owner);
+
+DROP POLICY IF EXISTS "Users can update own attachments" ON storage.objects;
+CREATE POLICY "Users can update own attachments"
+  ON storage.objects FOR UPDATE
+  USING (bucket_id = 'attachments' AND auth.uid() = owner);

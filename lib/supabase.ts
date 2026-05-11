@@ -133,6 +133,7 @@ export async function getRenewals(userId: string): Promise<Renewal[]> {
     tags: item.tags || [],
     autoRenew: item.auto_renew,
     contractEndDate: item.contract_end_date,
+    attachments: item.attachments || [],
   }));
 }
 
@@ -160,6 +161,7 @@ export async function addRenewal(userId: string, renewal: Renewal) {
       tags: renewal.tags,
       auto_renew: renewal.autoRenew,
       contract_end_date: renewal.contractEndDate,
+      attachments: renewal.attachments || [],
     }])
     .select()
     .single();
@@ -189,6 +191,7 @@ export async function updateRenewal(userId: string, renewal: Renewal) {
       tags: renewal.tags,
       auto_renew: renewal.autoRenew,
       contract_end_date: renewal.contractEndDate,
+      attachments: renewal.attachments || [],
       updated_at: new Date().toISOString(),
     })
     .eq('id', renewal.id)
@@ -230,4 +233,96 @@ export async function updateProfile(userId: string, updates: Partial<Profile>) {
     .single();
 
   return { data, error };
+}
+
+// Storage helpers for attachments
+const ATTACHMENTS_BUCKET = 'attachments';
+
+export async function uploadAttachment(userId: string, renewalId: string, file: File | Blob, fileName: string) {
+  const path = `${userId}/${renewalId}/${Date.now()}-${fileName}`;
+
+  const { data, error } = await supabase.storage
+    .from(ATTACHMENTS_BUCKET)
+    .upload(path, file, {
+      cacheControl: '3600',
+      upsert: false,
+    });
+
+  if (error) {
+    console.error('Error uploading attachment:', error);
+    return { data: null, error };
+  }
+
+  return { data, error: null };
+}
+
+export function getAttachmentUrl(path: string) {
+  const { data } = supabase.storage
+    .from(ATTACHMENTS_BUCKET)
+    .getPublicUrl(path);
+
+  return data?.publicUrl || '';
+}
+
+export async function deleteAttachment(path: string) {
+  const { data, error } = await supabase.storage
+    .from(ATTACHMENTS_BUCKET)
+    .remove([path]);
+
+  if (error) {
+    console.error('Error deleting attachment:', error);
+    return { data: null, error };
+  }
+
+  return { data, error: null };
+}
+
+// Renewal history CRUD
+export async function getRenewalHistory(renewalId: string): Promise<RenewalHistory[]> {
+  const { data, error } = await supabase
+    .from('renewal_history')
+    .select('*')
+    .eq('renewal_id', renewalId)
+    .order('changed_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching renewal history:', error);
+    return [];
+  }
+
+  return (data || []).map(item => ({
+    id: item.id,
+    renewalId: item.renewal_id,
+    oldCost: item.old_cost,
+    newCost: item.new_cost,
+    oldFrequency: item.old_frequency,
+    newFrequency: item.new_frequency,
+    changedAt: item.changed_at,
+  }));
+}
+
+export async function addRenewalHistory(history: Omit<RenewalHistory, 'id' | 'changedAt'>) {
+  const { data, error } = await supabase
+    .from('renewal_history')
+    .insert([{
+      renewal_id: history.renewalId,
+      old_cost: history.oldCost,
+      new_cost: history.newCost,
+      old_frequency: history.oldFrequency,
+      new_frequency: history.newFrequency,
+    }])
+    .select()
+    .single();
+
+  return { data, error };
+}
+
+export async function deleteRenewalHistory(renewalId: string, historyId: string) {
+  const { error } = await supabase
+    .from('renewal_history')
+    .delete()
+    .eq('id', historyId)
+    .eq('renewal_id', renewalId);
+
+  return { error };
 }

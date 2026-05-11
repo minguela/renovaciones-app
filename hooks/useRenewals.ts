@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import type { Renewal } from '@/types/renewal';
-import { supabase, getCurrentUser } from '@/lib/supabase';
+import type { Renewal, RenewalHistory } from '@/types/renewal';
+import { supabase, getCurrentUser, getRenewalHistory, addRenewalHistory } from '@/lib/supabase';
 
 export function useRenewals() {
   const [renewals, setRenewals] = useState<Renewal[]>([]);
@@ -59,6 +59,7 @@ export function useRenewals() {
         tags: item.tags || [],
         autoRenew: item.auto_renew,
         contractEndDate: item.contract_end_date,
+        attachments: item.attachments || [],
       }));
 
       setRenewals(mappedRenewals);
@@ -103,6 +104,7 @@ export function useRenewals() {
           tags: renewal.tags,
           auto_renew: renewal.autoRenew,
           contract_end_date: renewal.contractEndDate,
+          attachments: renewal.attachments || [],
         }]);
 
       if (supabaseError) throw supabaseError;
@@ -116,10 +118,28 @@ export function useRenewals() {
     }
   }, [userId, loadRenewals]);
 
-  const updateRenewal = useCallback(async (renewal: Renewal) => {
+  const updateRenewal = useCallback(async (renewal: Renewal, previousRenewal?: Renewal) => {
     if (!userId) return false;
 
     try {
+      // If cost or frequency changed, save history
+      if (previousRenewal) {
+        const costChanged = previousRenewal.cost !== renewal.cost;
+        const frequencyChanged = previousRenewal.frequency !== renewal.frequency;
+        if (costChanged || frequencyChanged) {
+          const { error: historyError } = await addRenewalHistory({
+            renewalId: renewal.id,
+            oldCost: previousRenewal.cost,
+            newCost: renewal.cost,
+            oldFrequency: previousRenewal.frequency,
+            newFrequency: renewal.frequency,
+          });
+          if (historyError) {
+            console.error('Error saving renewal history:', historyError);
+          }
+        }
+      }
+
       const { error: supabaseError } = await supabase
         .from('renewals')
         .update({
@@ -141,6 +161,7 @@ export function useRenewals() {
           tags: renewal.tags,
           auto_renew: renewal.autoRenew,
           contract_end_date: renewal.contractEndDate,
+          attachments: renewal.attachments || [],
           updated_at: new Date().toISOString(),
         })
         .eq('id', renewal.id)
@@ -182,6 +203,15 @@ export function useRenewals() {
     return renewals.find(r => r.id === id) || null;
   }, [renewals]);
 
+  const getHistoryForRenewal = useCallback(async (renewalId: string): Promise<RenewalHistory[]> => {
+    try {
+      return await getRenewalHistory(renewalId);
+    } catch (err) {
+      console.error('Error loading renewal history:', err);
+      return [];
+    }
+  }, []);
+
   return {
     renewals,
     loading,
@@ -190,6 +220,7 @@ export function useRenewals() {
     updateRenewal,
     deleteRenewal,
     getRenewalById,
+    getHistoryForRenewal,
     refresh: loadRenewals,
     isAuthenticated: !!userId,
   };

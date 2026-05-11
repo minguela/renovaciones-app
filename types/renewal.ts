@@ -3,6 +3,16 @@ export type RenewalFrequency = 'monthly' | 'quarterly' | 'biannual' | 'annual' |
 export type RenewalStatus = 'active' | 'pending_cancellation' | 'cancelled' | 'renewed';
 export type PaymentMethod = 'visa' | 'mastercard' | 'paypal' | 'revolut' | 'apple_pay' | 'bank_transfer' | 'cash';
 
+export interface RenewalHistory {
+  id: string;
+  renewalId: string;
+  oldCost: number;
+  newCost: number;
+  oldFrequency: RenewalFrequency;
+  newFrequency: RenewalFrequency;
+  changedAt: string;
+}
+
 export interface Renewal {
   id: string;
   name: string;
@@ -26,6 +36,7 @@ export interface Renewal {
   autoRenew?: boolean;
   contractEndDate?: string;
   yearlyCost?: number;
+  attachments?: string[];
 }
 
 export interface RenewalFormData {
@@ -47,6 +58,7 @@ export interface RenewalFormData {
   tags?: string[];
   autoRenew?: boolean;
   contractEndDate?: Date;
+  attachments?: string[];
 }
 
 export const RENEWAL_TYPES: { value: RenewalType; label: string; icon: string }[] = [
