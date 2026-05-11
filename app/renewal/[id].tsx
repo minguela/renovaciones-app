@@ -19,6 +19,7 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { CatalogPicker } from '@/components/CatalogPicker';
+import { AttachmentsUploader } from '@/components/AttachmentsUploader';
 import { useRenewals } from '@/hooks/useRenewals';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import {
@@ -42,7 +43,7 @@ export default function RenewalFormScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const isEditing = id !== 'new';
-  const { addRenewal, updateRenewal, deleteRenewal, getRenewalById, getHistoryForRenewal } = useRenewals();
+  const { addRenewal, updateRenewal, deleteRenewal, getRenewalById, getHistoryForRenewal, userId } = useRenewals();
 
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -77,6 +78,7 @@ export default function RenewalFormScreen() {
     bankAccount: '',
     tags: [],
     contractEndDate: undefined,
+    attachments: [],
   });
 
   useEffect(() => {
@@ -109,6 +111,7 @@ export default function RenewalFormScreen() {
         bankAccount: renewal.bankAccount || '',
         tags: renewal.tags || [],
         contractEndDate: renewal.contractEndDate ? new Date(renewal.contractEndDate) : undefined,
+        attachments: renewal.attachments || [],
       });
       // Load history
       setHistoryLoading(true);
@@ -153,6 +156,7 @@ export default function RenewalFormScreen() {
       bankAccount: formData.bankAccount?.trim() || undefined,
       tags: formData.tags || [],
       contractEndDate: formData.contractEndDate?.toISOString(),
+      attachments: formData.attachments || [],
     };
 
     const success = isEditing
@@ -497,6 +501,20 @@ export default function RenewalFormScreen() {
             multiline
             numberOfLines={4}
           />
+        </View>
+
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: secondaryText }]}>Archivos adjuntos</Text>
+          {userId ? (
+            <AttachmentsUploader
+              userId={userId}
+              renewalId={isEditing ? id : 'temp'}
+              attachments={formData.attachments || []}
+              onAttachmentsChange={(attachments) => updateFormData('attachments', attachments)}
+            />
+          ) : (
+            <Text style={{ color: secondaryText }}>Inicia sesión para gestionar adjuntos</Text>
+          )}
         </View>
 
         <View style={styles.section}>
