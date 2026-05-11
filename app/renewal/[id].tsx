@@ -8,6 +8,7 @@ import {
   Alert,
   ActivityIndicator,
   Platform,
+  Switch,
 } from 'react-native';
 import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -17,6 +18,7 @@ import { ThemedView } from '@/components/themed-view';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { CatalogPicker } from '@/components/CatalogPicker';
 import { useRenewals } from '@/hooks/useRenewals';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import {
@@ -26,6 +28,9 @@ import {
   RENEWAL_FREQUENCIES,
   CURRENCY_OPTIONS,
   COLORS,
+  STATUS_OPTIONS,
+  PAYMENT_METHODS,
+  TAG_OPTIONS,
   generateId,
 } from '@/types/renewal';
 
@@ -40,6 +45,8 @@ export default function RenewalFormScreen() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showContractEndDatePicker, setShowContractEndDatePicker] = useState(false);
+  const [catalogVisible, setCatalogVisible] = useState(false);
 
   const backgroundColor = isWeb
     ? 'rgba(186, 214, 247, 0.03)'
@@ -59,6 +66,12 @@ export default function RenewalFormScreen() {
     icon: 'creditcard.fill',
     notificationEnabled: true,
     notificationDaysBefore: 7,
+    status: 'active',
+    autoRenew: true,
+    paymentMethod: undefined,
+    bankAccount: '',
+    tags: [],
+    contractEndDate: undefined,
   });
 
   useEffect(() => {
@@ -84,6 +97,12 @@ export default function RenewalFormScreen() {
         icon: renewal.icon || 'creditcard.fill',
         notificationEnabled: renewal.notificationEnabled,
         notificationDaysBefore: renewal.notificationDaysBefore,
+        status: renewal.status || 'active',
+        autoRenew: renewal.autoRenew ?? true,
+        paymentMethod: renewal.paymentMethod,
+        bankAccount: renewal.bankAccount || '',
+        tags: renewal.tags || [],
+        contractEndDate: renewal.contractEndDate ? new Date(renewal.contractEndDate) : undefined,
       });
     }
     setLoading(false);
@@ -117,6 +136,12 @@ export default function RenewalFormScreen() {
       updatedAt: new Date().toISOString(),
       notificationEnabled: formData.notificationEnabled,
       notificationDaysBefore: formData.notificationDaysBefore,
+      status: formData.status || 'active',
+      autoRenew: formData.autoRenew ?? true,
+      paymentMethod: formData.paymentMethod,
+      bankAccount: formData.bankAccount?.trim() || undefined,
+      tags: formData.tags || [],
+      contractEndDate: formData.contractEndDate?.toISOString(),
     };
 
     const success = isEditing
@@ -161,11 +186,38 @@ export default function RenewalFormScreen() {
     }
   };
 
+  const onContractEndDateChange = (event: any, selectedDate?: Date) => {
+    setShowContractEndDatePicker(false);
+    if (selectedDate) {
+      setFormData(prev => ({ ...prev, contractEndDate: selectedDate }));
+    }
+  };
+
   const updateFormData = <K extends keyof RenewalFormData>(
     key: K,
     value: RenewalFormData[K]
   ) => {
     setFormData(prev => ({ ...prev, [key]: value }));
+  };
+
+  const handleCatalogSelect = (data: {
+    name: string;
+    type: RenewalFormData['type'];
+    frequency: RenewalFormData['frequency'];
+    cost: string;
+    provider: string;
+    icon: string;
+  }) => {
+    setFormData(prev => ({
+      ...prev,
+      name: data.name,
+      type: data.type,
+      frequency: data.frequency,
+      cost: data.cost,
+      provider: data.provider,
+      icon: data.icon,
+    }));
+    setCatalogVisible(false);
   };
 
   if (loading) {
@@ -200,6 +252,19 @@ export default function RenewalFormScreen() {
       >
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: secondaryText }]}>Información básica</Text>
+
+          {!isEditing && (
+            <TouchableOpacity
+              style={[styles.catalogButton, { backgroundColor }]}
+              onPress={() => setCatalogVisible(true)}
+              activeOpacity={0.7}
+            >
+              <IconSymbol name="magnifyingglass" size={18} color={accentColor} />
+              <Text style={[styles.catalogButtonText, { color: accentColor }]}>
+                Elegir del catálogo
+              </Text>
+            </TouchableOpacity>
+          )}
 
           <Input
             label="Nombre *"
@@ -423,6 +488,160 @@ export default function RenewalFormScreen() {
           />
         </View>
 
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: secondaryText }]}>Estado y pago</Text>
+
+          <Text style={[styles.label, { color: labelColor }]}>Estado</Text>
+          <View style={[styles.picker, { backgroundColor }]}>
+            {STATUS_OPTIONS.map((status) => (
+              <TouchableOpacity
+                key={status.value}
+                style={[
+                  styles.statusOption,
+                  formData.status === status.value && (isWeb ? styles.statusOptionSelectedWeb : styles.statusOptionSelected),
+                ]}
+                onPress={() => updateFormData('status', status.value)}
+              >
+                <View style={[styles.statusDot, { backgroundColor: status.color }]} />
+                <Text
+                  style={[
+                    styles.statusText,
+                    formData.status === status.value && (isWeb ? styles.statusTextSelectedWeb : styles.statusTextSelected),
+                  ]}
+                >
+                  {status.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <View style={[styles.notificationRow, { marginTop: 16 }]}>
+            <Text style={[styles.label, { color: labelColor }]}>Renovación automática</Text>
+            {isWeb ? (
+              <TouchableOpacity
+                style={[
+                  styles.toggle,
+                  formData.autoRenew && styles.toggleActiveWeb,
+                ]}
+                onPress={() => updateFormData('autoRenew', !formData.autoRenew)}
+              >
+                <View
+                  style={[
+                    styles.toggleKnob,
+                    formData.autoRenew && styles.toggleKnobActive,
+                  ]}
+                />
+              </TouchableOpacity>
+            ) : (
+              <Switch
+                value={formData.autoRenew}
+                onValueChange={(value) => updateFormData('autoRenew', value)}
+                trackColor={{ false: '#E5E5EA', true: '#34C759' }}
+              />
+            )}
+          </View>
+
+          <Text style={[styles.label, { marginTop: 16, color: labelColor }]}>Método de pago</Text>
+          <View style={styles.paymentGrid}>
+            {PAYMENT_METHODS.map((method) => (
+              <TouchableOpacity
+                key={method.value}
+                style={[
+                  styles.paymentOption,
+                  { backgroundColor },
+                  formData.paymentMethod === method.value && (isWeb ? styles.paymentOptionSelectedWeb : styles.paymentOptionSelected),
+                ]}
+                onPress={() => updateFormData('paymentMethod', method.value)}
+              >
+                <IconSymbol
+                  name={method.icon as any}
+                  size={20}
+                  color={formData.paymentMethod === method.value ? accentColor : secondaryText}
+                />
+                <Text
+                  style={[
+                    styles.paymentText,
+                    formData.paymentMethod === method.value && (isWeb ? styles.paymentTextSelectedWeb : styles.paymentTextSelected),
+                  ]}
+                >
+                  {method.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          {formData.paymentMethod === 'bank_transfer' && (
+            <Input
+              label="Cuenta bancaria"
+              placeholder="IBAN / Número de cuenta"
+              value={formData.bankAccount}
+              onChangeText={(text) => updateFormData('bankAccount', text)}
+              style={[styles.input, { marginTop: 12 }]}
+            />
+          )}
+
+          <Text style={[styles.label, { marginTop: 16, color: labelColor }]}>Etiquetas</Text>
+          <View style={styles.tagsRow}>
+            {TAG_OPTIONS.map((tag) => {
+              const isSelected = formData.tags?.includes(tag.value) ?? false;
+              return (
+                <TouchableOpacity
+                  key={tag.value}
+                  style={[
+                    styles.tagChip,
+                    isSelected && (isWeb ? styles.tagChipSelectedWeb : styles.tagChipSelected),
+                  ]}
+                  onPress={() => {
+                    const current = formData.tags || [];
+                    if (isSelected) {
+                      updateFormData('tags', current.filter((t) => t !== tag.value));
+                    } else {
+                      updateFormData('tags', [...current, tag.value]);
+                    }
+                  }}
+                >
+                  <Text
+                    style={[
+                      styles.tagText,
+                      isSelected && (isWeb ? styles.tagTextSelectedWeb : styles.tagTextSelected),
+                    ]}
+                  >
+                    {tag.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          <Text style={[styles.label, { marginTop: 16, color: labelColor }]}>Permanencia hasta</Text>
+          <TouchableOpacity
+            style={[styles.dateButton, { backgroundColor }]}
+            onPress={() => setShowContractEndDatePicker(true)}
+          >
+            <IconSymbol name="calendar.badge.clock" size={20} color={accentColor} />
+            <Text style={[styles.dateText, { color: textColor }]}>
+              {formData.contractEndDate
+                ? formData.contractEndDate.toLocaleDateString('es-ES', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                  })
+                : 'Sin fecha de permanencia'}
+            </Text>
+          </TouchableOpacity>
+
+          {showContractEndDatePicker && (
+            <DateTimePicker
+              value={formData.contractEndDate || new Date()}
+              mode="date"
+              display="spinner"
+              onChange={onContractEndDateChange}
+              minimumDate={new Date()}
+            />
+          )}
+        </View>
+
         <View style={styles.buttonContainer}>
           <Button
             title={isEditing ? 'Guardar cambios' : 'Crear renovación'}
@@ -440,6 +659,12 @@ export default function RenewalFormScreen() {
           )}
         </View>
       </ScrollView>
+
+      <CatalogPicker
+        visible={catalogVisible}
+        onClose={() => setCatalogVisible(false)}
+        onSelect={handleCatalogSelect}
+      />
     </SafeAreaView>
   );
 }
@@ -693,8 +918,128 @@ const styles = StyleSheet.create({
     color: '#b6d9fc',
     fontWeight: '500',
   },
+  statusOption: {
+    flex: 1,
+    paddingVertical: 10,
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  statusOptionSelected: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  statusOptionSelectedWeb: {
+    backgroundColor: 'rgba(102, 58, 243, 0.15)',
+    borderRadius: 6,
+  },
+  statusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  statusText: {
+    fontSize: 13,
+    color: '#8E8E93',
+  },
+  statusTextSelected: {
+    color: '#007AFF',
+    fontWeight: '500',
+  },
+  statusTextSelectedWeb: {
+    color: '#b6d9fc',
+    fontWeight: '500',
+  },
+  paymentGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  paymentOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    gap: 6,
+    minWidth: '30%',
+    flex: 1,
+  },
+  paymentOptionSelected: {
+    backgroundColor: '#007AFF15',
+  },
+  paymentOptionSelectedWeb: {
+    backgroundColor: 'rgba(102, 58, 243, 0.1)',
+    borderColor: 'rgba(102, 58, 243, 0.3)',
+    borderWidth: 1,
+  },
+  paymentText: {
+    fontSize: 13,
+    color: '#3C3C43',
+  },
+  paymentTextSelected: {
+    color: '#007AFF',
+    fontWeight: '500',
+  },
+  paymentTextSelectedWeb: {
+    color: '#b6d9fc',
+    fontWeight: '500',
+  },
+  tagsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  tagChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    backgroundColor: '#E5E5EA',
+  },
+  tagChipSelected: {
+    backgroundColor: '#007AFF15',
+  },
+  tagChipSelectedWeb: {
+    backgroundColor: 'rgba(102, 58, 243, 0.15)',
+    borderColor: 'rgba(102, 58, 243, 0.3)',
+    borderWidth: 1,
+  },
+  tagText: {
+    fontSize: 13,
+    color: '#3C3C43',
+  },
+  tagTextSelected: {
+    color: '#007AFF',
+    fontWeight: '500',
+  },
+  tagTextSelectedWeb: {
+    color: '#b6d9fc',
+    fontWeight: '500',
+  },
   buttonContainer: {
     paddingHorizontal: 16,
     paddingVertical: 24,
+  },
+  catalogButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    gap: 8,
+    marginBottom: 16,
+    borderWidth: isWeb ? 1 : 0,
+    borderColor: isWeb ? 'rgba(186, 215, 247, 0.12)' : 'transparent',
+  },
+  catalogButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
   },
 });

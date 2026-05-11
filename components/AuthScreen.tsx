@@ -10,8 +10,10 @@ import {
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { signIn, signUp } from '@/lib/supabase';
+import FontAwesome from '@expo/vector-icons/FontAwesome';
+import { signIn, signUp, signInWithApple, signInWithGoogle } from '@/lib/supabase';
 import { Button } from '@/components/ui/Button';
+import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useThemeColor } from '@/hooks/use-theme-color';
 
 const isWeb = Platform.OS === 'web';
@@ -25,9 +27,12 @@ export function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [oauthLoading, setOauthLoading] = useState<'apple' | 'google' | null>(null);
 
   const textColor = useThemeColor({ light: '#000000', dark: '#FFFFFF' }, 'text');
   const secondaryTextColor = isWeb ? '#9da7ba' : useThemeColor({ light: '#666666', dark: '#999999' }, 'text');
+
+  const isAuthLoading = loading || oauthLoading !== null;
 
   const handleSubmit = async () => {
     if (!email || !password) {
@@ -62,6 +67,38 @@ export function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
     }
   };
 
+  const handleAppleSignIn = async () => {
+    setOauthLoading('apple');
+    try {
+      const { error } = await signInWithApple();
+      if (error) {
+        Alert.alert('Error', error.message);
+      } else {
+        onAuthSuccess();
+      }
+    } catch (err) {
+      Alert.alert('Error', 'Ocurrió un error inesperado');
+    } finally {
+      setOauthLoading(null);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setOauthLoading('google');
+    try {
+      const { error } = await signInWithGoogle();
+      if (error) {
+        Alert.alert('Error', error.message);
+      } else {
+        onAuthSuccess();
+      }
+    } catch (err) {
+      Alert.alert('Error', 'Ocurrió un error inesperado');
+    } finally {
+      setOauthLoading(null);
+    }
+  };
+
   return (
     <SafeAreaView style={[styles.container, isWeb && styles.webContainer]}>
       <View style={[styles.content, isWeb && styles.webContent]}>
@@ -74,6 +111,54 @@ export function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
               ? 'Inicia sesión para gestionar tus renovaciones'
               : 'Regístrate para empezar'}
           </Text>
+        </View>
+
+        <View style={[styles.oauthContainer, isWeb && styles.webOAuthContainer]}>
+          <TouchableOpacity
+            style={[
+              styles.oauthButton,
+              styles.appleButton,
+              isWeb && styles.webOAuthButton,
+            ]}
+            onPress={handleAppleSignIn}
+            disabled={isAuthLoading}
+            activeOpacity={0.8}
+          >
+            {oauthLoading === 'apple' ? (
+              <ActivityIndicator color="#FFFFFF" />
+            ) : (
+              <>
+                <IconSymbol name="apple.logo" size={20} color="#FFFFFF" style={styles.oauthIcon} />
+                <Text style={[styles.oauthText, styles.appleText]}>Continuar con Apple</Text>
+              </>
+            )}
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.oauthButton,
+              styles.googleButton,
+              isWeb && styles.webOAuthButton,
+            ]}
+            onPress={handleGoogleSignIn}
+            disabled={isAuthLoading}
+            activeOpacity={0.8}
+          >
+            {oauthLoading === 'google' ? (
+              <ActivityIndicator color="#333333" />
+            ) : (
+              <>
+                <FontAwesome name="google" size={18} color="#333333" style={styles.oauthIcon} />
+                <Text style={[styles.oauthText, styles.googleText]}>Continuar con Google</Text>
+              </>
+            )}
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.separator}>
+          <View style={[styles.separatorLine, { backgroundColor: isWeb ? 'rgba(186, 215, 247, 0.12)' : '#E5E5EA' }]} />
+          <Text style={[styles.separatorText, { color: secondaryTextColor }]}>o</Text>
+          <View style={[styles.separatorLine, { backgroundColor: isWeb ? 'rgba(186, 215, 247, 0.12)' : '#E5E5EA' }]} />
         </View>
 
         <View style={[styles.form, isWeb && styles.webForm]}>
@@ -96,6 +181,7 @@ export function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
               onChangeText={setEmail}
               keyboardType="email-address"
               autoCapitalize="none"
+              editable={!isAuthLoading}
             />
           </View>
 
@@ -117,6 +203,7 @@ export function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
               value={password}
               onChangeText={setPassword}
               secureTextEntry
+              editable={!isAuthLoading}
             />
           </View>
 
@@ -124,6 +211,7 @@ export function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
             title={isLogin ? 'Iniciar sesión' : 'Crear cuenta'}
             onPress={handleSubmit}
             loading={loading}
+            disabled={isAuthLoading}
             size="lg"
           />
         </View>
@@ -177,6 +265,61 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 24,
   },
+  oauthContainer: {
+    gap: 12,
+    marginBottom: 24,
+  },
+  webOAuthContainer: {
+    maxWidth: 400,
+    width: '100%',
+    alignSelf: 'center',
+  },
+  oauthButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 50,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+  },
+  webOAuthButton: {
+    borderRadius: 999,
+  },
+  appleButton: {
+    backgroundColor: '#000000',
+  },
+  googleButton: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: isWeb ? 'rgba(186, 215, 247, 0.2)' : 'rgba(0, 0, 0, 0.1)',
+  },
+  oauthIcon: {
+    marginRight: 10,
+  },
+  oauthText: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  appleText: {
+    color: '#FFFFFF',
+  },
+  googleText: {
+    color: '#333333',
+  },
+  separator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 24,
+    gap: 12,
+  },
+  separatorLine: {
+    flex: 1,
+    height: 1,
+  },
+  separatorText: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
   form: {
     backgroundColor: isWeb ? 'rgba(5, 6, 15, 0.97)' : '#FFFFFF',
     borderRadius: isWeb ? 16 : 16,
@@ -195,6 +338,9 @@ const styles = StyleSheet.create({
           shadowRadius: 8,
           elevation: 4,
         }),
+  },
+  webForm: {
+    // inherits from form
   },
   inputContainer: {
     marginBottom: 16,

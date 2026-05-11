@@ -1,4 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
+import { Platform } from 'react-native';
+import * as WebBrowser from 'expo-web-browser';
 import type { Renewal } from '@/types/renewal';
 
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
@@ -45,6 +47,56 @@ export async function getCurrentUser() {
   return user;
 }
 
+export async function signInWithApple() {
+  if (Platform.OS === 'web') {
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'apple',
+      options: { redirectTo: typeof window !== 'undefined' ? window.location.origin : '' },
+    });
+    return { data, error };
+  }
+
+  // Native iOS: for true native Sign in with Apple, install expo-apple-authentication
+  // and use supabase.auth.signInWithIdToken({ provider: 'apple', token: identityToken });
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: 'apple',
+    options: { redirectTo: 'renovacionesapp://', skipBrowserRedirect: true },
+  });
+
+  if (error) return { data, error };
+
+  if (data?.url) {
+    const result = await WebBrowser.openAuthSessionAsync(data.url, 'renovacionesapp://');
+    if (result.type === 'success' && 'url' in result) {
+      await supabase.auth.getSession();
+    }
+  }
+
+  return { data, error };
+}
+
+export async function signInWithGoogle() {
+  const redirectTo = Platform.OS === 'web'
+    ? (typeof window !== 'undefined' ? window.location.origin : '')
+    : 'renovacionesapp://';
+
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo, skipBrowserRedirect: Platform.OS !== 'web' },
+  });
+
+  if (error) return { data, error };
+
+  if (Platform.OS !== 'web' && data?.url) {
+    const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
+    if (result.type === 'success' && 'url' in result) {
+      await supabase.auth.getSession();
+    }
+  }
+
+  return { data, error };
+}
+
 // Renewals CRUD
 export async function getRenewals(userId: string): Promise<Renewal[]> {
   const { data, error } = await supabase
@@ -75,6 +127,12 @@ export async function getRenewals(userId: string): Promise<Renewal[]> {
     updatedAt: item.updated_at,
     notificationEnabled: item.notification_enabled,
     notificationDaysBefore: item.notification_days_before,
+    status: item.status,
+    paymentMethod: item.payment_method,
+    bankAccount: item.bank_account,
+    tags: item.tags || [],
+    autoRenew: item.auto_renew,
+    contractEndDate: item.contract_end_date,
   }));
 }
 
@@ -96,6 +154,12 @@ export async function addRenewal(userId: string, renewal: Renewal) {
       icon: renewal.icon,
       notification_enabled: renewal.notificationEnabled,
       notification_days_before: renewal.notificationDaysBefore,
+      status: renewal.status,
+      payment_method: renewal.paymentMethod,
+      bank_account: renewal.bankAccount,
+      tags: renewal.tags,
+      auto_renew: renewal.autoRenew,
+      contract_end_date: renewal.contractEndDate,
     }])
     .select()
     .single();
@@ -119,6 +183,12 @@ export async function updateRenewal(userId: string, renewal: Renewal) {
       icon: renewal.icon,
       notification_enabled: renewal.notificationEnabled,
       notification_days_before: renewal.notificationDaysBefore,
+      status: renewal.status,
+      payment_method: renewal.paymentMethod,
+      bank_account: renewal.bankAccount,
+      tags: renewal.tags,
+      auto_renew: renewal.autoRenew,
+      contract_end_date: renewal.contractEndDate,
       updated_at: new Date().toISOString(),
     })
     .eq('id', renewal.id)

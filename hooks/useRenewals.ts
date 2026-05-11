@@ -53,6 +53,12 @@ export function useRenewals() {
         updatedAt: item.updated_at,
         notificationEnabled: item.notification_enabled,
         notificationDaysBefore: item.notification_days_before,
+        status: item.status,
+        paymentMethod: item.payment_method,
+        bankAccount: item.bank_account,
+        tags: item.tags || [],
+        autoRenew: item.auto_renew,
+        contractEndDate: item.contract_end_date,
       }));
 
       setRenewals(mappedRenewals);
@@ -91,6 +97,12 @@ export function useRenewals() {
           icon: renewal.icon,
           notification_enabled: renewal.notificationEnabled,
           notification_days_before: renewal.notificationDaysBefore,
+          status: renewal.status,
+          payment_method: renewal.paymentMethod,
+          bank_account: renewal.bankAccount,
+          tags: renewal.tags,
+          auto_renew: renewal.autoRenew,
+          contract_end_date: renewal.contractEndDate,
         }]);
 
       if (supabaseError) throw supabaseError;
@@ -123,6 +135,12 @@ export function useRenewals() {
           icon: renewal.icon,
           notification_enabled: renewal.notificationEnabled,
           notification_days_before: renewal.notificationDaysBefore,
+          status: renewal.status,
+          payment_method: renewal.paymentMethod,
+          bank_account: renewal.bankAccount,
+          tags: renewal.tags,
+          auto_renew: renewal.autoRenew,
+          contract_end_date: renewal.contractEndDate,
           updated_at: new Date().toISOString(),
         })
         .eq('id', renewal.id)

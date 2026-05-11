@@ -1,5 +1,7 @@
 export type RenewalType = 'insurance' | 'subscription' | 'license' | 'other';
 export type RenewalFrequency = 'monthly' | 'quarterly' | 'biannual' | 'annual' | 'one-time';
+export type RenewalStatus = 'active' | 'pending_cancellation' | 'cancelled' | 'renewed';
+export type PaymentMethod = 'visa' | 'mastercard' | 'paypal' | 'revolut' | 'apple_pay' | 'bank_transfer' | 'cash';
 
 export interface Renewal {
   id: string;
@@ -17,6 +19,13 @@ export interface Renewal {
   updatedAt: string;
   notificationEnabled: boolean;
   notificationDaysBefore: number; // days before renewal to notify
+  status?: RenewalStatus;
+  paymentMethod?: PaymentMethod;
+  bankAccount?: string;
+  tags?: string[];
+  autoRenew?: boolean;
+  contractEndDate?: string;
+  yearlyCost?: number;
 }
 
 export interface RenewalFormData {
@@ -32,6 +41,12 @@ export interface RenewalFormData {
   icon?: string;
   notificationEnabled: boolean;
   notificationDaysBefore: number;
+  status?: RenewalStatus;
+  paymentMethod?: PaymentMethod;
+  bankAccount?: string;
+  tags?: string[];
+  autoRenew?: boolean;
+  contractEndDate?: Date;
 }
 
 export const RENEWAL_TYPES: { value: RenewalType; label: string; icon: string }[] = [
@@ -53,6 +68,37 @@ export const CURRENCY_OPTIONS = [
   { value: 'EUR', label: 'EUR (€)', symbol: '€' },
   { value: 'USD', label: 'USD ($)', symbol: '$' },
   { value: 'GBP', label: 'GBP (£)', symbol: '£' },
+];
+
+export const STATUS_OPTIONS: { value: RenewalStatus; label: string; color: string }[] = [
+  { value: 'active', label: 'Activa', color: '#34C759' },
+  { value: 'pending_cancellation', label: 'Pendiente cancelar', color: '#FF9500' },
+  { value: 'cancelled', label: 'Cancelada', color: '#FF3B30' },
+  { value: 'renewed', label: 'Renovada', color: '#5856D6' },
+];
+
+export const PAYMENT_METHODS: { value: PaymentMethod; label: string; icon: string }[] = [
+  { value: 'visa', label: 'Visa', icon: 'creditcard.fill' },
+  { value: 'mastercard', label: 'Mastercard', icon: 'creditcard.fill' },
+  { value: 'paypal', label: 'PayPal', icon: 'doc.text.fill' },
+  { value: 'revolut', label: 'Revolut', icon: 'creditcard.fill' },
+  { value: 'apple_pay', label: 'Apple Pay', icon: 'apple.logo' },
+  { value: 'bank_transfer', label: 'Transferencia', icon: 'building.columns.fill' },
+  { value: 'cash', label: 'Efectivo', icon: 'banknote.fill' },
+];
+
+export const TAG_OPTIONS: { value: string; label: string }[] = [
+  { value: 'Trabajo', label: 'Trabajo' },
+  { value: 'Casa', label: 'Casa' },
+  { value: 'Personal', label: 'Personal' },
+  { value: 'IA', label: 'IA' },
+  { value: 'Streaming', label: 'Streaming' },
+  { value: 'Seguros', label: 'Seguros' },
+  { value: 'Deporte', label: 'Deporte' },
+  { value: 'Transporte', label: 'Transporte' },
+  { value: 'Educación', label: 'Educación' },
+  { value: 'Mascotas', label: 'Mascotas' },
+  { value: 'Otros', label: 'Otros' },
 ];
 
 export const COLORS = [

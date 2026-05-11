@@ -32,6 +32,12 @@ CREATE TABLE renewals (
   icon TEXT,
   notification_enabled BOOLEAN DEFAULT true,
   notification_days_before INTEGER DEFAULT 7,
+  status TEXT DEFAULT 'active',
+  payment_method TEXT,
+  bank_account TEXT,
+  tags TEXT[] DEFAULT '{}',
+  auto_renew BOOLEAN DEFAULT true,
+  contract_end_date DATE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
