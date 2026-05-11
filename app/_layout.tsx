@@ -58,7 +58,7 @@ export default function RootLayout() {
       if (event === 'SIGNED_IN' && session?.user) {
         // Remove OAuth callback hash from URL on web
         if (isWeb && typeof window !== 'undefined' && window.location.hash) {
-          window.history.replaceState(null, '', window.location.pathname);
+          window.history.replaceState(null, '', window.location.pathname + window.location.search);
         }
       }
     });
