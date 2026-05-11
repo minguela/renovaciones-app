@@ -1,5 +1,5 @@
 import React from 'react';
-import { TextInput, StyleSheet, Text, View, ViewStyle } from 'react-native';
+import { TextInput, StyleSheet, Text, View, ViewStyle, Platform } from 'react-native';
 import { useThemeColor } from '@/hooks/use-theme-color';
 
 interface InputProps {
@@ -15,6 +15,8 @@ interface InputProps {
   error?: string;
 }
 
+const isWeb = Platform.OS === 'web';
+
 export function Input({
   label,
   placeholder,
@@ -27,19 +29,36 @@ export function Input({
   style,
   error,
 }: InputProps) {
-  const backgroundColor = useThemeColor({ light: '#F2F2F7', dark: '#2C2C2E' }, 'background');
+  const backgroundColor = isWeb
+    ? 'rgba(199, 211, 234, 0.06)'
+    : useThemeColor({ light: '#F2F2F7', dark: '#2C2C2E' }, 'background');
   const textColor = useThemeColor({ light: '#000000', dark: '#FFFFFF' }, 'text');
-  const placeholderColor = useThemeColor({ light: '#8E8E93', dark: '#8E8E93' }, 'text');
+  const placeholderColor = isWeb ? '#9da7ba' : useThemeColor({ light: '#8E8E93', dark: '#8E8E93' }, 'text');
 
   return (
     <View style={style}>
-      {label && <Text style={styles.label}>{label}</Text>}
+      {label && (
+        <Text style={[styles.label, { color: isWeb ? '#d1e4fa' : '#3C3C43' }]}>
+          {label}
+        </Text>
+      )}
       <TextInput
         style={[
           styles.input,
-          { backgroundColor, color: textColor },
+          {
+            backgroundColor,
+            color: textColor,
+            borderColor: isWeb
+              ? error
+                ? 'rgba(255, 69, 58, 0.5)'
+                : 'rgba(186, 215, 247, 0.12)'
+              : error
+              ? '#FF3B30'
+              : 'transparent',
+            borderWidth: isWeb ? 1 : error ? 1 : 0,
+            borderRadius: isWeb ? 4 : 8,
+          },
           multiline && { height: numberOfLines ? numberOfLines * 24 : 100, textAlignVertical: 'top' },
-          error && { borderColor: '#FF3B30', borderWidth: 1 },
         ]}
         placeholder={placeholder}
         placeholderTextColor={placeholderColor}
@@ -50,7 +69,7 @@ export function Input({
         multiline={multiline}
         numberOfLines={numberOfLines}
       />
-      {error && <Text style={styles.errorText}>{error}</Text>}
+      {error && <Text style={[styles.errorText, { color: isWeb ? '#FF453A' : '#FF3B30' }]}>{error}</Text>}
     </View>
   );
 }
@@ -60,16 +79,13 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
     marginBottom: 6,
-    color: '#3C3C43',
   },
   input: {
     paddingHorizontal: 12,
     paddingVertical: 12,
-    borderRadius: 8,
     fontSize: 16,
   },
   errorText: {
-    color: '#FF3B30',
     fontSize: 12,
     marginTop: 4,
   },

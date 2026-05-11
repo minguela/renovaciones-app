@@ -7,11 +7,14 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { signIn, signUp } from '@/lib/supabase';
 import { Button } from '@/components/ui/Button';
 import { useThemeColor } from '@/hooks/use-theme-color';
+
+const isWeb = Platform.OS === 'web';
 
 interface AuthScreenProps {
   onAuthSuccess: () => void;
@@ -24,7 +27,7 @@ export function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
   const [loading, setLoading] = useState(false);
 
   const textColor = useThemeColor({ light: '#000000', dark: '#FFFFFF' }, 'text');
-  const secondaryTextColor = useThemeColor({ light: '#666666', dark: '#999999' }, 'text');
+  const secondaryTextColor = isWeb ? '#9da7ba' : useThemeColor({ light: '#666666', dark: '#999999' }, 'text');
 
   const handleSubmit = async () => {
     if (!email || !password) {
@@ -60,8 +63,8 @@ export function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
+    <SafeAreaView style={[styles.container, isWeb && styles.webContainer]}>
+      <View style={[styles.content, isWeb && styles.webContent]}>
         <View style={styles.header}>
           <Text style={[styles.title, { color: textColor }]}>
             {isLogin ? 'Bienvenido' : 'Crear cuenta'}
@@ -73,12 +76,22 @@ export function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
           </Text>
         </View>
 
-        <View style={styles.form}>
+        <View style={[styles.form, isWeb && styles.webForm]}>
           <View style={styles.inputContainer}>
-            <Text style={styles.label}>Email</Text>
+            <Text style={[styles.label, { color: isWeb ? '#d1e4fa' : '#3C3C43' }]}>Email</Text>
             <TextInput
-              style={styles.input}
+              style={[
+                styles.input,
+                {
+                  backgroundColor: isWeb ? 'rgba(199, 211, 234, 0.06)' : '#F2F2F7',
+                  color: textColor,
+                  borderColor: isWeb ? 'rgba(186, 215, 247, 0.12)' : 'transparent',
+                  borderWidth: isWeb ? 1 : 0,
+                  borderRadius: isWeb ? 4 : 8,
+                },
+              ]}
               placeholder="tu@email.com"
+              placeholderTextColor={isWeb ? '#9da7ba' : '#8E8E93'}
               value={email}
               onChangeText={setEmail}
               keyboardType="email-address"
@@ -87,10 +100,20 @@ export function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
           </View>
 
           <View style={styles.inputContainer}>
-            <Text style={styles.label}>Contraseña</Text>
+            <Text style={[styles.label, { color: isWeb ? '#d1e4fa' : '#3C3C43' }]}>Contraseña</Text>
             <TextInput
-              style={styles.input}
+              style={[
+                styles.input,
+                {
+                  backgroundColor: isWeb ? 'rgba(199, 211, 234, 0.06)' : '#F2F2F7',
+                  color: textColor,
+                  borderColor: isWeb ? 'rgba(186, 215, 247, 0.12)' : 'transparent',
+                  borderWidth: isWeb ? 1 : 0,
+                  borderRadius: isWeb ? 4 : 8,
+                },
+              ]}
               placeholder="******"
+              placeholderTextColor={isWeb ? '#9da7ba' : '#8E8E93'}
               value={password}
               onChangeText={setPassword}
               secureTextEntry
@@ -101,6 +124,7 @@ export function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
             title={isLogin ? 'Iniciar sesión' : 'Crear cuenta'}
             onPress={handleSubmit}
             loading={loading}
+            size="lg"
           />
         </View>
 
@@ -109,7 +133,7 @@ export function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
             {isLogin ? '¿No tienes cuenta?' : '¿Ya tienes cuenta?'}
           </Text>
           <TouchableOpacity onPress={() => setIsLogin(!isLogin)}>
-            <Text style={styles.footerLink}>
+            <Text style={[styles.footerLink, { color: isWeb ? '#b6d9fc' : '#007AFF' }]}>
               {isLogin ? 'Regístrate' : 'Inicia sesión'}
             </Text>
           </TouchableOpacity>
@@ -122,35 +146,55 @@ export function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F2F2F7',
+    backgroundColor: isWeb ? '#05060f' : '#F2F2F7',
+  },
+  webContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   content: {
     flex: 1,
     justifyContent: 'center',
     paddingHorizontal: 24,
   },
+  webContent: {
+    maxWidth: 420,
+    width: '100%',
+    paddingVertical: 48,
+  },
   header: {
     alignItems: 'center',
     marginBottom: 40,
   },
   title: {
-    fontSize: 32,
-    fontWeight: '700',
+    fontSize: isWeb ? 32 : 32,
+    fontWeight: isWeb ? '500' : '700',
     marginBottom: 8,
+    letterSpacing: isWeb ? 0 : 0,
   },
   subtitle: {
     fontSize: 16,
     textAlign: 'center',
+    lineHeight: 24,
   },
   form: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
+    backgroundColor: isWeb ? 'rgba(5, 6, 15, 0.97)' : '#FFFFFF',
+    borderRadius: isWeb ? 16 : 16,
     padding: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    ...(isWeb
+      ? {
+          borderColor: 'rgba(186, 215, 247, 0.12)',
+          borderWidth: 1,
+          boxShadow:
+            'rgba(216, 236, 248, 0.2) 0px 1px 1px 0px inset, rgba(168, 216, 245, 0.06) 0px 24px 48px 0px inset, rgba(0, 0, 0, 0.3) 0px 16px 32px 0px',
+        }
+      : {
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 8,
+          elevation: 4,
+        }),
   },
   inputContainer: {
     marginBottom: 16,
@@ -159,13 +203,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
     marginBottom: 6,
-    color: '#3C3C43',
   },
   input: {
-    backgroundColor: '#F2F2F7',
     paddingHorizontal: 12,
     paddingVertical: 12,
-    borderRadius: 8,
     fontSize: 16,
   },
   footer: {
@@ -180,7 +221,6 @@ const styles = StyleSheet.create({
   },
   footerLink: {
     fontSize: 14,
-    color: '#007AFF',
     fontWeight: '600',
   },
 });
