@@ -3,8 +3,8 @@ import { Platform } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
 import type { Renewal } from '@/types/renewal';
 
-const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || 'https://grgmuqaigqgrbjvzjecn.supabase.co';
-const supabaseKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-anon-key';
+const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://grgmuqaigqgrbjvzjecn.supabase.co';
+const supabaseKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-anon-key';
 
 export const supabase = createClient(supabaseUrl, supabaseKey);
 
