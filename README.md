@@ -1,50 +1,175 @@
-# Welcome to your Expo app 👋
+# RenovacionesApp
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Aplicación multiplataforma para gestionar seguros, suscripciones y renovaciones. Disponible para **iOS** (Expo) y **Web** (PWA).
 
-## Get started
+## Características
 
-1. Install dependencies
+- Gestión de renovaciones (seguros, suscripciones, licencias)
+- Notificaciones vía WhatsApp, Telegram o Email
+- Sincronización en la nube con Supabase
+- Autenticación de usuarios
+- Calculadora de gastos mensuales/anuales
+- Diseño responsive (móvil y web)
+- Dark mode
 
-   ```bash
-   npm install
-   ```
+## Arquitectura
 
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
+```
+Frontend: React Native + Expo (iOS/Web)
+Backend: Serverless Functions (Vercel/Netlify)
+Database: Supabase (PostgreSQL + Auth)
+Notifications: WhatsApp (CallMeBot), Telegram Bot, Email (Resend)
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## Configuración Rápida
 
-## Learn more
+### 1. Supabase (Base de datos)
 
-To learn more about developing your project with Expo, look at the following resources:
+1. Crea proyecto en [supabase.com](https://supabase.com)
+2. Ve a SQL Editor y ejecuta el contenido de `supabase/schema.sql`
+3. Copia URL y anon key desde Settings > API
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+### 2. Variables de entorno
 
-## Join the community
+```bash
+cp .env.example .env
+```
 
-Join our community of developers creating universal apps.
+Edita `.env`:
+```
+EXPO_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+EXPO_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+SUPABASE_SERVICE_KEY=your-service-role-key
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+# Para notificaciones (opcional)
+CALLMEBOT_API_KEY=your-key
+TELEGRAM_BOT_TOKEN=your-bot-token
+RESEND_API_KEY=your-key
+```
+
+### 3. Instalar dependencias
+
+```bash
+npm install
+```
+
+### 4. Ejecutar localmente
+
+```bash
+# iOS (requiere macOS + Xcode)
+npx expo run:ios
+
+# Web
+npx expo start --web
+
+# Expo Go (iOS/Android)
+npx expo start
+```
+
+## Configuración de Notificaciones
+
+### WhatsApp (CallMeBot) - Gratis
+
+1. Añade `+34 644 16 71 91` a tus contactos
+2. Envía: `I allow callmebot to send me messages`
+3. Obtén tu API key en [callmebot.com](https://www.callmebot.com/blog/free-api-whatsapp-messages/)
+4. Guarda en tu perfil de la app
+
+### Telegram - Gratis
+
+1. Crea un bot con [@BotFather](https://t.me/BotFather)
+2. Copia el token del bot
+3. Escribe un mensaje al bot
+4. Obtén tu chat ID: `https://api.telegram.org/bot<TOKEN>/getUpdates`
+5. Configura en la app
+
+### Email (Resend) - 100 emails/día gratis
+
+1. Crea cuenta en [resend.com](https://resend.com)
+2. Verifica tu dominio o usa `onboarding@resend.dev` para pruebas
+3. Copia la API key
+
+## Despliegue
+
+### Web (Vercel)
+
+```bash
+npm i -g vercel
+vercel
+```
+
+### iOS (App Store)
+
+```bash
+eas build --platform ios
+```
+
+## Scripts disponibles
+
+| Comando | Descripción |
+|---------|-------------|
+| `npm start` | Inicia servidor de desarrollo |
+| `npm run ios` | Ejecuta en simulador iOS |
+| `npm run android` | Ejecuta en emulador Android |
+| `npm run web` | Ejecuta versión web |
+| `npm run lint` | Ejecuta ESLint |
+
+## Workflow Git
+
+```bash
+# Nueva feature
+git checkout -b feature/nombre-feature main
+# ... cambios ...
+git commit -m "feat: descripción"
+git push origin feature/nombre-feature
+# Crear PR en GitHub
+
+# Bugfix
+git checkout -b fix/nombre-fix main
+# ... cambios ...
+git commit -m "fix: descripción"
+git push origin fix/nombre-fix
+# Crear PR en GitHub
+```
+
+## Estructura del proyecto
+
+```
+app/                    # Expo Router
+├── (tabs)/            # Tabs navigation
+│   ├── index.tsx      # Listado de renovaciones
+│   └── _layout.tsx    # Tab layout
+├── renewal/
+│   └── [id].tsx       # Formulario crear/editar
+└── _layout.tsx        # Root layout
+
+components/            # Componentes React
+├── RenewalCard.tsx    # Tarjeta de renovación
+├── AuthScreen.tsx     # Pantalla de login/registro
+├── NotificationSettings.tsx  # Config notificaciones
+└── ui/                # Componentes base
+
+lib/                   # Librerías y configuración
+├── supabase.ts        # Cliente Supabase
+└── notifications/     # Servicios de notificación
+    ├── whatsapp.ts
+    ├── telegram.ts
+    └── email.ts
+
+api/                   # Serverless functions
+└── send-notification.ts
+
+supabase/
+└── schema.sql         # Esquema de base de datos
+
+hooks/
+├── useRenewals.ts     # Hook para CRUD de renovaciones
+└── useThemeColor.ts   # Hook para tema
+
+types/
+└── renewal.ts         # Tipos TypeScript
+```
+
+## Licencia
+
+MIT

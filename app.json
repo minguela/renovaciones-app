@@ -12,7 +12,11 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.tuusuario.renovaciones",
       "infoPlist": {
-        "UIBackgroundModes": ["remote-notification"]
+        "UIBackgroundModes": [
+          "remote-notification",
+          "remote-notification"
+        ],
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -57,6 +61,13 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "a60a8654-aa73-4bca-8bd3-36245358f844"
+      }
+    },
+    "owner": "minguela"
   }
 }

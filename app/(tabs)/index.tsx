@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import { StyleSheet, FlatList, View, ActivityIndicator, RefreshControl } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { StyleSheet, FlatList, View, ActivityIndicator, RefreshControl, ScrollView } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -8,19 +8,37 @@ import { ThemedView } from '@/components/themed-view';
 import { RenewalCard } from '@/components/RenewalCard';
 import { EmptyState } from '@/components/EmptyState';
 import { Button } from '@/components/ui/Button';
+import { AuthScreen } from '@/components/AuthScreen';
+import { NotificationSettings } from '@/components/NotificationSettings';
 import { useRenewals } from '@/hooks/useRenewals';
 import { useThemeColor } from '@/hooks/use-theme-color';
-import * as notifications from '@/services/notifications';
+import { signOut, getCurrentUser } from '@/lib/supabase';
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { renewals, loading, error, refresh } = useRenewals();
+  const { renewals, loading, error, refresh, isAuthenticated } = useRenewals();
+  const [user, setUser] = useState<any>(null);
+  const [showSettings, setShowSettings] = useState(false);
   const tintColor = useThemeColor({ light: '#007AFF', dark: '#0A84FF' }, 'tint');
 
   useEffect(() => {
-    // Request notification permissions on mount
-    notifications.registerForPushNotificationsAsync();
+    checkUser();
   }, []);
+
+  const checkUser = async () => {
+    const currentUser = await getCurrentUser();
+    setUser(currentUser);
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
+    setUser(null);
+  };
+
+  // Show auth screen if not authenticated
+  if (!user) {
+    return <AuthScreen onAuthSuccess={() => checkUser()} />;
+  }
 
   const totalMonthly = renewals
     .filter(r => r.frequency === 'monthly')
@@ -47,32 +65,59 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Stack.Screen options={{ title: 'Mis Renovaciones' }} />
-      
-      {renewals.length > 0 && (
-        <View style={styles.summaryContainer}>
-          <View style={styles.summaryCard}>
-            <ThemedText style={styles.summaryLabel}>Gasto mensual</ThemedText>
-            <ThemedText style={styles.summaryValue}>€{totalMonthly.toFixed(2)}</ThemedText>
-          </View>
-          <View style={styles.summaryCard}>
-            <ThemedText style={styles.summaryLabel}>Gasto anual</ThemedText>
-            <ThemedText style={styles.summaryValue}>€{totalAnnual.toFixed(2)}</ThemedText>
-          </View>
-        </View>
-      )}
-
-      <FlatList
-        data={renewals}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => <RenewalCard renewal={item} />}
-        contentContainerStyle={renewals.length === 0 && styles.emptyList}
-        ListEmptyComponent={<EmptyState />}
-        refreshControl={
-          <RefreshControl refreshing={loading} onRefresh={refresh} tintColor={tintColor} />
-        }
-        showsVerticalScrollIndicator={false}
+      <Stack.Screen 
+        options={{ 
+          title: 'Mis Renovaciones',
+          headerRight: () => (
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              <Button 
+                title="⚙️" 
+                onPress={() => setShowSettings(!showSettings)}
+                variant="secondary"
+              />
+              <Button 
+                title="Salir" 
+                onPress={handleSignOut}
+                variant="danger"
+              />
+            </View>
+          ),
+        }} 
       />
+      
+      <ScrollView showsVerticalScrollIndicator={false}>
+        {showSettings && (
+          <View style={styles.settingsContainer}>
+            <NotificationSettings />
+          </View>
+        )}
+
+        {renewals.length > 0 && (
+          <View style={styles.summaryContainer}>
+            <View style={styles.summaryCard}>
+              <ThemedText style={styles.summaryLabel}>Gasto mensual</ThemedText>
+              <ThemedText style={styles.summaryValue}>€{totalMonthly.toFixed(2)}</ThemedText>
+            </View>
+            <View style={styles.summaryCard}>
+              <ThemedText style={styles.summaryLabel}>Gasto anual</ThemedText>
+              <ThemedText style={styles.summaryValue}>€{totalAnnual.toFixed(2)}</ThemedText>
+            </View>
+          </View>
+        )}
+
+        <FlatList
+          data={renewals}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => <RenewalCard renewal={item} />}
+          contentContainerStyle={renewals.length === 0 && styles.emptyList}
+          ListEmptyComponent={<EmptyState />}
+          refreshControl={
+            <RefreshControl refreshing={loading} onRefresh={refresh} tintColor={tintColor} />
+          }
+          showsVerticalScrollIndicator={false}
+          scrollEnabled={false}
+        />
+      </ScrollView>
 
       <View style={styles.fabContainer}>
         <Button
@@ -92,6 +137,10 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  settingsContainer: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
   },
   summaryContainer: {
     flexDirection: 'row',
