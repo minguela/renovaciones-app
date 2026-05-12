@@ -1,7 +1,7 @@
-export type RenewalType = 'insurance' | 'subscription' | 'license' | 'other';
+export type RenewalType = string;
 export type RenewalFrequency = 'monthly' | 'quarterly' | 'biannual' | 'annual' | 'one-time';
 export type RenewalStatus = 'active' | 'pending_cancellation' | 'cancelled' | 'renewed';
-export type PaymentMethod = 'visa' | 'mastercard' | 'paypal' | 'revolut' | 'apple_pay' | 'direct_debit';
+export type PaymentMethod = 'visa' | 'mastercard' | 'paypal' | 'revolut' | 'apple_pay' | 'direct_debit' | 'bizum' | 'other';
 export type NotificationMethod = 'email' | 'sms' | 'whatsapp' | 'telegram' | 'push';
 
 export interface RenewalHistory {

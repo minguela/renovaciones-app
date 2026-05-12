@@ -7,6 +7,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { RenewalCard } from '@/components/RenewalCard';
 import { EmptyState } from '@/components/EmptyState';
+import { RenewalFilters, DEFAULT_FILTERS, applyFilters, type FilterState } from '@/components/RenewalFilters';
 import { Button } from '@/components/ui/Button';
 import { AuthScreen } from '@/components/AuthScreen';
 import { NotificationSettings } from '@/components/NotificationSettings';
@@ -29,15 +30,6 @@ const AIRBNB = {
   coralDeep: '#e00b41',
 };
 
-type FilterStatus = 'all' | 'active' | 'pending_cancellation' | 'cancelled';
-
-const FILTER_CHIPS: { value: FilterStatus; label: string }[] = [
-  { value: 'all', label: 'Todas' },
-  { value: 'active', label: 'Activas' },
-  { value: 'pending_cancellation', label: 'Pendientes' },
-  { value: 'cancelled', label: 'Canceladas' },
-];
-
 export default function HomeScreen() {
   const router = useRouter();
   const { width } = useWindowDimensions();
@@ -58,7 +50,7 @@ export default function HomeScreen() {
   } = useAuth();
   const { renewals, loading, error, refresh } = useRenewals(user?.id);
   const [showSettings, setShowSettings] = useState(false);
-  const [filterStatus, setFilterStatus] = useState<FilterStatus>('active');
+  const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
   const tintColor = useThemeColor({ light: '#007AFF', dark: '#0A84FF' }, 'tint');
 
   const handleSignOut = async () => {
@@ -73,9 +65,8 @@ export default function HomeScreen() {
   };
 
   const filteredRenewals = useMemo(() => {
-    if (filterStatus === 'all') return renewals;
-    return renewals.filter((r) => (r.status || 'active') === filterStatus);
-  }, [renewals, filterStatus]);
+    return applyFilters(renewals, filters);
+  }, [renewals, filters]);
 
   const kpiData = useMemo(() => {
     const totalMonthly = renewals.reduce((sum, r) => {
@@ -247,36 +238,11 @@ export default function HomeScreen() {
         </>
       )}
 
-      <View style={styles.filterContainer}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          <View style={styles.filterRow}>
-            {FILTER_CHIPS.map((chip) => {
-              const isActive = filterStatus === chip.value;
-              return (
-                <TouchableOpacity
-                  key={chip.value}
-                  style={[
-                    styles.filterChip,
-                    !isActive && isWeb && styles.filterChipWeb,
-                    isActive && (isWeb ? styles.filterChipActiveWeb : styles.filterChipActive),
-                  ]}
-                  onPress={() => setFilterStatus(chip.value)}
-                >
-                  <ThemedText
-                    style={[
-                      styles.filterChipText,
-                      !isActive && isWeb && styles.filterChipTextWeb,
-                      isActive && (isWeb ? styles.filterChipTextActiveWeb : styles.filterChipTextActive),
-                    ]}
-                  >
-                    {chip.label}
-                  </ThemedText>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        </ScrollView>
-      </View>
+      <RenewalFilters
+        filters={filters}
+        onChange={setFilters}
+        renewals={renewals}
+      />
 
       <FlatList
         data={filteredRenewals}
@@ -501,194 +467,156 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: AIRBNB.slate,
     fontSize: 16,
-  },
-  settingsContainer: {
-    paddingHorizontal: isWeb ? 0 : 16,
-    paddingTop: isWeb ? 0 : 16,
+    lineHeight: 22,
   },
   kpiContainer: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     paddingHorizontal: 16,
     paddingTop: 16,
-    paddingBottom: 8,
     gap: 12,
   },
   webKpiContainer: {
-    paddingHorizontal: 0,
-    gap: 12,
-    flexWrap: 'wrap',
+    paddingTop: 24,
+    paddingHorizontal: 24,
+    maxWidth: 900,
+    alignSelf: 'center',
+    width: '100%',
   },
   kpiCard: {
-    flex: 1,
-    backgroundColor: '#007AFF15',
+    backgroundColor: '#FFFFFF',
     borderRadius: 12,
-    padding: 14,
-    minWidth: 100,
+    padding: 16,
+    minWidth: '45%',
+    flex: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
   },
   webKpiCard: {
     backgroundColor: AIRBNB.card,
-    borderColor: AIRBNB.mist,
     borderWidth: 1,
-    borderRadius: 14,
-    padding: 16,
-  },
+    borderColor: AIRBNB.mist,
+    boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
+  } as any,
   kpiLabel: {
     fontSize: 12,
-    color: isWeb ? AIRBNB.slate : '#007AFF',
+    fontWeight: '500',
+    color: '#8E8E93',
     marginBottom: 4,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   kpiValue: {
-    fontSize: 18,
+    fontSize: 24,
     fontWeight: '700',
-    color: '#007AFF',
+    color: '#000000',
   },
   webKpiValue: {
-    fontSize: 20,
-    fontWeight: '600',
     color: AIRBNB.carbon,
   },
   timelineContainer: {
+    marginTop: 24,
     paddingHorizontal: 16,
-    paddingVertical: 12,
   },
   webTimelineContainer: {
-    paddingHorizontal: 0,
-    marginTop: 8,
-    marginBottom: 8,
-    backgroundColor: AIRBNB.card,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: AIRBNB.mist,
-    padding: 16,
+    paddingHorizontal: 24,
+    maxWidth: 900,
+    alignSelf: 'center',
+    width: '100%',
   },
   sectionTitle: {
-    fontSize: 13,
+    fontSize: 18,
     fontWeight: '600',
-    textTransform: 'uppercase',
-    marginBottom: 10,
-    color: isWeb ? AIRBNB.slate : '#8E8E93',
+    marginBottom: 12,
+    color: '#000000',
   },
   webSectionTitle: {
-    color: AIRBNB.slate,
+    color: AIRBNB.carbon,
   },
   timelineScroll: {
     gap: 12,
     paddingRight: 16,
   },
   timelineItem: {
-    backgroundColor: '#F2F2F7',
-    borderRadius: 10,
-    padding: 12,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 14,
     minWidth: 160,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
   },
   webTimelineItem: {
-    backgroundColor: AIRBNB.canvas,
+    backgroundColor: AIRBNB.card,
     borderWidth: 1,
     borderColor: AIRBNB.mist,
-  },
+    boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
+  } as any,
   timelineMonth: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '600',
-    color: isWeb ? AIRBNB.carbon : '#000000',
-    marginBottom: 4,
-    fontFamily: isWeb ? 'monospace' : undefined,
+    marginBottom: 6,
+    color: '#000000',
   },
   webTimelineMonth: {
     color: AIRBNB.carbon,
-    fontFamily: 'monospace',
   },
   timelineNames: {
     fontSize: 13,
-    color: isWeb ? AIRBNB.slate : '#666666',
+    color: '#6a6a6a',
+    lineHeight: 18,
   },
   webTimelineNames: {
     color: AIRBNB.slate,
   },
   savingsContainer: {
+    marginTop: 24,
     paddingHorizontal: 16,
-    paddingVertical: 12,
   },
   webSavingsContainer: {
-    paddingHorizontal: 0,
-    marginTop: 8,
-    marginBottom: 8,
-    backgroundColor: AIRBNB.card,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: AIRBNB.mist,
-    padding: 16,
+    paddingHorizontal: 24,
+    maxWidth: 900,
+    alignSelf: 'center',
+    width: '100%',
   },
   savingRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: isWeb ? AIRBNB.mist : '#E5E5EA',
+    paddingVertical: 10,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#E5E5EA',
   },
   webSavingRow: {
     borderBottomColor: AIRBNB.mist,
   },
   savingName: {
-    fontSize: 14,
-    color: isWeb ? AIRBNB.carbon : '#000000',
+    fontSize: 15,
+    fontWeight: '500',
+    color: '#000000',
   },
   savingAmount: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '600',
     color: '#FF3B30',
   },
   webSavingAmount: {
-    color: '#FF453A',
-  },
-  filterContainer: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  filterRow: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  filterChip: {
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 16,
-    backgroundColor: '#E5E5EA',
-  },
-  filterChipWeb: {
-    backgroundColor: AIRBNB.canvas,
-    borderWidth: 1,
-    borderColor: AIRBNB.mist,
-  },
-  filterChipActive: {
-    backgroundColor: '#007AFF15',
-  },
-  filterChipActiveWeb: {
-    backgroundColor: AIRBNB.carbon,
-    borderWidth: 1,
-    borderColor: AIRBNB.carbon,
-  },
-  filterChipText: {
-    fontSize: 13,
-    color: '#3C3C43',
-  },
-  filterChipTextWeb: {
-    color: AIRBNB.carbon,
-  },
-  filterChipTextActive: {
-    color: '#007AFF',
-    fontWeight: '500',
-  },
-  filterChipTextActiveWeb: {
-    color: '#FFFFFF',
-    fontWeight: '500',
-  },
-  emptyList: {
-    flexGrow: 1,
+    color: AIRBNB.coral,
   },
   fabContainer: {
-    paddingHorizontal: isWeb ? 0 : 16,
-    paddingVertical: 16,
+    position: 'absolute',
+    bottom: 24,
+    right: 16,
+    left: 16,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 12,
   },
   exportButtonWeb: {
     backgroundColor: AIRBNB.carbon,
@@ -702,5 +630,10 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 14,
     fontWeight: '600',
+  },
+  emptyList: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });

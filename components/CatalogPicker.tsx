@@ -7,12 +7,14 @@ import {
   StyleSheet,
   ScrollView,
   Platform,
+  TextInput,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { CatalogCategories, CatalogCategory, CatalogOption } from '@/types/catalog';
-import { RENEWAL_TYPES } from '@/types/renewal';
+import { RENEWAL_TYPES, COLORS } from '@/types/renewal';
 
 const isWeb = Platform.OS === 'web';
 
@@ -26,14 +28,24 @@ interface CatalogPickerProps {
     cost: string;
     provider: string;
     icon: string;
+    color?: string;
+    currency?: string;
   }) => void;
+  customCategories?: CatalogCategory[];
+  onAddCategory?: (category: CatalogCategory) => void;
 }
 
-export function CatalogPicker({ visible, onClose, onSelect }: CatalogPickerProps) {
+export function CatalogPicker({ visible, onClose, onSelect, customCategories = [], onAddCategory }: CatalogPickerProps) {
   const [selectedCategory, setSelectedCategory] = useState<CatalogCategory | null>(null);
+  const [addingCategory, setAddingCategory] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+
+  const allCategories = [...CatalogCategories, ...customCategories];
 
   const handleClose = () => {
     setSelectedCategory(null);
+    setAddingCategory(false);
+    setNewCategoryName('');
     onClose();
   };
 
@@ -50,18 +62,42 @@ export function CatalogPicker({ visible, onClose, onSelect }: CatalogPickerProps
       cost: option.defaultCost.toString(),
       provider: option.suggestedProvider || category.name,
       icon: typeInfo?.icon || category.icon,
+      color: option.defaultColor || category.color,
+      currency: option.defaultCurrency || 'EUR',
     });
     setSelectedCategory(null);
+    setAddingCategory(false);
   };
 
   const handleBack = () => {
     setSelectedCategory(null);
   };
 
+  const handleAddCategory = () => {
+    if (!newCategoryName.trim()) {
+      Alert.alert('Error', 'El nombre de la categoría es obligatorio');
+      return;
+    }
+    const newCategory: CatalogCategory = {
+      id: `custom-${Date.now()}`,
+      name: newCategoryName.trim(),
+      icon: 'tag.fill',
+      color: COLORS[Math.floor(Math.random() * COLORS.length)],
+      options: [],
+    };
+    if (onAddCategory) {
+      onAddCategory(newCategory);
+    }
+    setNewCategoryName('');
+    setAddingCategory(false);
+    setSelectedCategory(newCategory);
+  };
+
   const accentColor = isWeb ? '#ff385c' : '#007AFF';
   const textColor = isWeb ? '#222222' : '#000000';
   const secondaryText = isWeb ? '#6a6a6a' : '#8E8E93';
   const headerBg = isWeb ? '#f7f7f7' : '#F2F2F7';
+  const cardBg = isWeb ? '#ffffff' : '#FFFFFF';
 
   return (
     <Modal
@@ -112,33 +148,66 @@ export function CatalogPicker({ visible, onClose, onSelect }: CatalogPickerProps
           showsVerticalScrollIndicator={false}
         >
           {!selectedCategory ? (
-            <View style={styles.grid}>
-              {CatalogCategories.map((category) => (
-                <TouchableOpacity
-                  key={category.id}
-                  style={[styles.categoryCard, isWeb && styles.categoryCardWeb]}
-                  onPress={() => handleSelectCategory(category)}
-                  activeOpacity={0.7}
-                >
-                  <View style={[styles.iconContainer, isWeb && styles.iconContainerWeb]}>
-                    <IconSymbol
-                      name={category.icon as any}
-                      size={28}
-                      color={accentColor}
-                    />
-                  </View>
-                  <Text
-                    style={[styles.categoryName, { color: textColor }]}
-                    numberOfLines={2}
+            <>
+              <View style={styles.grid}>
+                {allCategories.map((category) => (
+                  <TouchableOpacity
+                    key={category.id}
+                    style={[styles.categoryCard, isWeb && styles.categoryCardWeb]}
+                    onPress={() => handleSelectCategory(category)}
+                    activeOpacity={0.7}
                   >
-                    {category.name}
-                  </Text>
-                  <Text style={[styles.categoryCount, { color: secondaryText }]}>
-                    {category.options.length} opciones
+                    <View style={[styles.iconContainer, isWeb && styles.iconContainerWeb]}>
+                      <IconSymbol
+                        name={category.icon as any}
+                        size={28}
+                        color={category.color || accentColor}
+                      />
+                    </View>
+                    <Text
+                      style={[styles.categoryName, { color: textColor }]}
+                      numberOfLines={2}
+                    >
+                      {category.name}
+                    </Text>
+                    <Text style={[styles.categoryCount, { color: secondaryText }]}>
+                      {category.options.length} opciones
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              {addingCategory ? (
+                <View style={[styles.addCategoryContainer, isWeb && { backgroundColor: cardBg, borderColor: '#ebebeb' }]}>
+                  <TextInput
+                    style={[styles.addCategoryInput, { color: textColor }]}
+                    placeholder="Nombre de nueva categoría"
+                    placeholderTextColor={secondaryText}
+                    value={newCategoryName}
+                    onChangeText={setNewCategoryName}
+                    autoFocus
+                  />
+                  <View style={styles.addCategoryButtons}>
+                    <TouchableOpacity onPress={() => setAddingCategory(false)} style={styles.addCategoryButton}>
+                      <Text style={{ color: secondaryText }}>Cancelar</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={handleAddCategory} style={[styles.addCategoryButton, styles.addCategoryButtonPrimary]}>
+                      <Text style={{ color: '#fff', fontWeight: '600' }}>Añadir</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ) : (
+                <TouchableOpacity
+                  style={[styles.addCategoryButtonRow, isWeb && { backgroundColor: cardBg, borderColor: '#ebebeb' }]}
+                  onPress={() => setAddingCategory(true)}
+                >
+                  <IconSymbol name="plus.circle.fill" size={20} color={accentColor} />
+                  <Text style={[styles.addCategoryButtonText, { color: accentColor }]}>
+                    Añadir nueva categoría
                   </Text>
                 </TouchableOpacity>
-              ))}
-            </View>
+              )}
+            </>
           ) : (
             <View style={styles.optionsList}>
               {selectedCategory.options.map((option, index) => (
@@ -170,6 +239,14 @@ export function CatalogPicker({ visible, onClose, onSelect }: CatalogPickerProps
                   </View>
                 </TouchableOpacity>
               ))}
+
+              {selectedCategory.options.length === 0 && (
+                <View style={styles.emptyState}>
+                  <Text style={[styles.emptyStateText, { color: secondaryText }]}>
+                    Esta categoría está vacía. Añade opciones manualmente en el formulario.
+                  </Text>
+                </View>
+              )}
             </View>
           )}
         </ScrollView>
@@ -277,6 +354,55 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 4,
   },
+  addCategoryButtonRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginHorizontal: 16,
+    marginVertical: 12,
+    paddingVertical: 14,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#E5E5EA',
+    borderStyle: 'dashed',
+  },
+  addCategoryButtonText: {
+    fontSize: 15,
+    fontWeight: '500',
+  },
+  addCategoryContainer: {
+    marginHorizontal: 16,
+    marginVertical: 12,
+    padding: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#E5E5EA',
+  },
+  addCategoryInput: {
+    fontSize: 16,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: '#E5E5EA',
+    borderRadius: 8,
+    marginBottom: 12,
+  },
+  addCategoryButtons: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 12,
+  },
+  addCategoryButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  addCategoryButtonPrimary: {
+    backgroundColor: '#ff385c',
+  },
   optionsList: {
     paddingHorizontal: 16,
     paddingVertical: 8,
@@ -318,5 +444,14 @@ const styles = StyleSheet.create({
   optionCost: {
     fontSize: 14,
     fontWeight: '600',
+  },
+  emptyState: {
+    paddingVertical: 40,
+    alignItems: 'center',
+  },
+  emptyStateText: {
+    fontSize: 14,
+    textAlign: 'center',
+    paddingHorizontal: 24,
   },
 });

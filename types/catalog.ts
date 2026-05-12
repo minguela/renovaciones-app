@@ -1,4 +1,5 @@
 import { RenewalFrequency, RenewalType } from './renewal';
+import { COLORS } from './renewal';
 
 export interface CatalogOption {
   name: string;
@@ -6,12 +7,15 @@ export interface CatalogOption {
   defaultFrequency: RenewalFrequency;
   defaultType: RenewalType;
   suggestedProvider?: string;
+  defaultColor?: string;
+  defaultCurrency?: string;
 }
 
 export interface CatalogCategory {
   id: string;
   name: string;
   icon: string; // SF Symbols name
+  color?: string;
   options: CatalogOption[];
 }
 
@@ -20,6 +24,7 @@ export const CatalogCategories: CatalogCategory[] = [
     id: 'streaming',
     name: 'Streaming y entretenimiento',
     icon: 'play.rectangle.fill',
+    color: COLORS[4], // Purple
     options: [
       { name: 'Netflix', defaultCost: 12.99, defaultFrequency: 'monthly', defaultType: 'subscription', suggestedProvider: 'Netflix' },
       { name: 'HBO Max', defaultCost: 9.99, defaultFrequency: 'monthly', defaultType: 'subscription', suggestedProvider: 'HBO' },
@@ -41,6 +46,7 @@ export const CatalogCategories: CatalogCategory[] = [
     id: 'software',
     name: 'Software y productividad',
     icon: 'laptopcomputer',
+    color: COLORS[0], // Blue
     options: [
       { name: 'ChatGPT Plus', defaultCost: 20.0, defaultFrequency: 'monthly', defaultType: 'subscription', suggestedProvider: 'OpenAI' },
       { name: 'Claude Pro', defaultCost: 20.0, defaultFrequency: 'monthly', defaultType: 'subscription', suggestedProvider: 'Anthropic' },
@@ -66,6 +72,7 @@ export const CatalogCategories: CatalogCategory[] = [
     id: 'insurance',
     name: 'Seguros',
     icon: 'shield.fill',
+    color: COLORS[1], // Green
     options: [
       { name: 'Seguro coche', defaultCost: 450.0, defaultFrequency: 'annual', defaultType: 'insurance', suggestedProvider: 'Mapfre' },
       { name: 'Seguro moto', defaultCost: 250.0, defaultFrequency: 'annual', defaultType: 'insurance', suggestedProvider: 'Mapfre' },
@@ -85,6 +92,7 @@ export const CatalogCategories: CatalogCategory[] = [
     id: 'housing',
     name: 'Vivienda y suministros',
     icon: 'house.fill',
+    color: COLORS[2], // Orange
     options: [
       { name: 'Electricidad', defaultCost: 75.0, defaultFrequency: 'monthly', defaultType: 'other', suggestedProvider: 'Iberdrola' },
       { name: 'Gas', defaultCost: 45.0, defaultFrequency: 'monthly', defaultType: 'other', suggestedProvider: 'Naturgy' },
@@ -104,6 +112,7 @@ export const CatalogCategories: CatalogCategory[] = [
     id: 'finance',
     name: 'Finanzas',
     icon: 'creditcard.fill',
+    color: COLORS[5], // Pink
     options: [
       { name: 'Tarjeta crédito', defaultCost: 30.0, defaultFrequency: 'annual', defaultType: 'other', suggestedProvider: 'BBVA' },
       { name: 'Cuota bancaria', defaultCost: 5.0, defaultFrequency: 'quarterly', defaultType: 'other', suggestedProvider: 'CaixaBank' },
@@ -119,6 +128,7 @@ export const CatalogCategories: CatalogCategory[] = [
     id: 'health',
     name: 'Salud y deporte',
     icon: 'heart.fill',
+    color: COLORS[3], // Red
     options: [
       { name: 'Gimnasio', defaultCost: 39.99, defaultFrequency: 'monthly', defaultType: 'subscription', suggestedProvider: 'Basic-Fit' },
       { name: 'Rocódromo', defaultCost: 45.0, defaultFrequency: 'monthly', defaultType: 'subscription', suggestedProvider: 'Indoorwall' },
@@ -134,6 +144,7 @@ export const CatalogCategories: CatalogCategory[] = [
     id: 'transport',
     name: 'Transporte',
     icon: 'car.fill',
+    color: COLORS[6], // Cyan
     options: [
       { name: 'Abono transporte', defaultCost: 54.6, defaultFrequency: 'monthly', defaultType: 'other', suggestedProvider: 'Metro' },
       { name: 'Carsharing', defaultCost: 9.0, defaultFrequency: 'monthly', defaultType: 'subscription', suggestedProvider: 'ShareNow' },
@@ -148,6 +159,7 @@ export const CatalogCategories: CatalogCategory[] = [
     id: 'technology',
     name: 'Tecnología y hardware',
     icon: 'server.rack',
+    color: COLORS[7], // Yellow
     options: [
       { name: 'Dominio web', defaultCost: 12.0, defaultFrequency: 'annual', defaultType: 'other', suggestedProvider: 'Cloudflare' },
       { name: 'Hosting', defaultCost: 8.0, defaultFrequency: 'monthly', defaultType: 'subscription', suggestedProvider: 'OVHcloud' },
@@ -164,6 +176,7 @@ export const CatalogCategories: CatalogCategory[] = [
     id: 'education',
     name: 'Educación',
     icon: 'book.fill',
+    color: COLORS[0], // Blue
     options: [
       { name: 'Udemy', defaultCost: 15.0, defaultFrequency: 'monthly', defaultType: 'subscription', suggestedProvider: 'Udemy' },
       { name: 'Platzi', defaultCost: 16.0, defaultFrequency: 'monthly', defaultType: 'subscription', suggestedProvider: 'Platzi' },
@@ -178,6 +191,7 @@ export const CatalogCategories: CatalogCategory[] = [
     id: 'pets',
     name: 'Mascotas',
     icon: 'pawprint.fill',
+    color: COLORS[5], // Pink
     options: [
       { name: 'Seguro mascota', defaultCost: 25.0, defaultFrequency: 'monthly', defaultType: 'insurance', suggestedProvider: 'PetPlan' },
       { name: 'Veterinario', defaultCost: 30.0, defaultFrequency: 'monthly', defaultType: 'other', suggestedProvider: 'VetCenter' },
@@ -190,6 +204,7 @@ export const CatalogCategories: CatalogCategory[] = [
     id: 'others',
     name: 'Otros',
     icon: 'tag.fill',
+    color: COLORS[4], // Purple
     options: [
       { name: 'Donaciones', defaultCost: 10.0, defaultFrequency: 'monthly', defaultType: 'other', suggestedProvider: 'Patreon' },
       { name: 'Patreon', defaultCost: 5.0, defaultFrequency: 'monthly', defaultType: 'subscription', suggestedProvider: 'Patreon' },
