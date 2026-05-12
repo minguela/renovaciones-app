@@ -22,6 +22,8 @@ import { CatalogPicker } from '@/components/CatalogPicker';
 import { AttachmentsUploader } from '@/components/AttachmentsUploader';
 import { useRenewals } from '@/hooks/useRenewals';
 import { useAuth } from '@/hooks/useAuth';
+import { useCustomCatalogs } from '@/hooks/useCustomCatalogs';
+import { CatalogCategory } from '@/types/catalog';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import {
   type Renewal,
@@ -106,6 +108,7 @@ export default function RenewalFormScreen() {
   const isEditing = id !== 'new';
   const { user } = useAuth();
   const { addRenewal, updateRenewal, deleteRenewal, getRenewalById, getHistoryForRenewal } = useRenewals(user?.id);
+  const { catalogs: customCatalogs, addCatalog: addCustomCatalog } = useCustomCatalogs(user?.id);
 
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -287,6 +290,8 @@ export default function RenewalFormScreen() {
     cost: string;
     provider: string;
     icon: string;
+    color?: string;
+    currency?: string;
   }) => {
     setFormData(prev => ({
       ...prev,
@@ -296,6 +301,8 @@ export default function RenewalFormScreen() {
       cost: data.cost,
       provider: data.provider,
       icon: data.icon,
+      color: data.color || prev.color,
+      currency: data.currency || prev.currency,
     }));
     setCatalogVisible(false);
   };
@@ -913,6 +920,21 @@ export default function RenewalFormScreen() {
         visible={catalogVisible}
         onClose={() => setCatalogVisible(false)}
         onSelect={handleCatalogSelect}
+        customCategories={customCatalogs.map(c => ({
+          id: c.id,
+          name: c.name,
+          icon: c.icon,
+          color: c.color,
+          options: c.options,
+        }))}
+        onAddCategory={async (cat) => {
+          await addCustomCatalog({
+            name: cat.name,
+            icon: cat.icon,
+            color: cat.color,
+            options: [],
+          });
+        }}
       />
     </SafeAreaView>
   );
