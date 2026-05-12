@@ -206,28 +206,61 @@ export function CatalogPicker({
           </>
         ) : (
           <View style={styles.optionsList}>
-            {selectedCategory.options.map((option, index) => (
-              <Pressable
-                key={`${option.name}-${index}`}
-                style={({ pressed }) => [
-                  styles.optionRow,
-                  isWeb && styles.optionRowWeb,
-                  pressed && styles.optionRowPressed,
-                ]}
-                onPress={() => handleSelectOption(option, selectedCategory)}
-              >
-                <View style={styles.optionInfo}>
-                  <Text style={styles.optionName}>{option.name}</Text>
-                  {option.suggestedProvider && (
-                    <Text style={styles.optionProvider}>{option.suggestedProvider}</Text>
-                  )}
-                </View>
-                <View style={styles.optionMeta}>
-                  <Text style={styles.optionCost}>{option.defaultCost.toFixed(2)} €</Text>
-                  <IconSymbol name="chevron.right" size={18} color={TOKENS.slate} />
-                </View>
-              </Pressable>
-            ))}
+            {selectedCategory.options.map((option, index) =>
+              isWeb ? (
+                <button
+                  key={`${option.name}-${index}`}
+                  type="button"
+                  onClick={() => handleSelectOption(option, selectedCategory)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    backgroundColor: TOKENS.card,
+                    borderRadius: '10px',
+                    padding: '14px 16px',
+                    marginBottom: '8px',
+                    border: `1px solid ${TOKENS.mist}`,
+                    cursor: 'pointer',
+                    width: '100%',
+                    textAlign: 'left',
+                    fontFamily: 'inherit',
+                    fontSize: '16px',
+                  }}
+                >
+                  <View style={styles.optionInfo}>
+                    <Text style={styles.optionName}>{option.name}</Text>
+                    {option.suggestedProvider && (
+                      <Text style={styles.optionProvider}>{option.suggestedProvider}</Text>
+                    )}
+                  </View>
+                  <View style={styles.optionMeta}>
+                    <Text style={styles.optionCost}>{option.defaultCost.toFixed(2)} €</Text>
+                    <IconSymbol name="chevron.right" size={18} color={TOKENS.slate} />
+                  </View>
+                </button>
+              ) : (
+                <Pressable
+                  key={`${option.name}-${index}`}
+                  style={({ pressed }) => [
+                    styles.optionRow,
+                    pressed && styles.optionRowPressed,
+                  ]}
+                  onPress={() => handleSelectOption(option, selectedCategory)}
+                >
+                  <View style={styles.optionInfo}>
+                    <Text style={styles.optionName}>{option.name}</Text>
+                    {option.suggestedProvider && (
+                      <Text style={styles.optionProvider}>{option.suggestedProvider}</Text>
+                    )}
+                  </View>
+                  <View style={styles.optionMeta}>
+                    <Text style={styles.optionCost}>{option.defaultCost.toFixed(2)} €</Text>
+                    <IconSymbol name="chevron.right" size={18} color={TOKENS.slate} />
+                  </View>
+                </Pressable>
+              )
+            )}
 
             {selectedCategory.options.length === 0 && (
               <View style={styles.emptyState}>

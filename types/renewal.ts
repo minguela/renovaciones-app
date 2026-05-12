@@ -47,7 +47,7 @@ export interface RenewalFormData {
   frequency: RenewalFrequency;
   cost: string;
   currency: string;
-  renewalDate: Date;
+  renewalDate: Date | undefined;
   provider?: string;
   notes?: string;
   color?: string;

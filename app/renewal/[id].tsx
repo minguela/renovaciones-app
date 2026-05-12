@@ -131,7 +131,7 @@ export default function RenewalFormScreen() {
     frequency: 'monthly',
     cost: '',
     currency: 'EUR',
-    renewalDate: new Date(),
+    renewalDate: undefined,
     provider: '',
     notes: '',
     color: COLORS[0],
@@ -153,6 +153,13 @@ export default function RenewalFormScreen() {
       loadRenewal();
     }
   }, [id]);
+
+  // Set default renewal date after mount to avoid hydration mismatch
+  useEffect(() => {
+    if (!isEditing) {
+      setFormData(prev => ({ ...prev, renewalDate: new Date() }));
+    }
+  }, []);
 
   const loadRenewal = async () => {
     setLoading(true);
@@ -209,7 +216,7 @@ export default function RenewalFormScreen() {
       frequency: formData.frequency,
       cost: parseFloat(formData.cost),
       currency: formData.currency,
-      renewalDate: formData.renewalDate.toISOString(),
+      renewalDate: formData.renewalDate?.toISOString() || new Date().toISOString(),
       provider: formData.provider?.trim() || undefined,
       notes: formData.notes?.trim() || undefined,
       color: formData.color,
@@ -294,6 +301,7 @@ export default function RenewalFormScreen() {
     color?: string;
     currency?: string;
   }) => {
+    console.log('[Catalog] selected:', data);
     setFormData(prev => ({
       ...prev,
       name: data.name,
@@ -496,7 +504,6 @@ export default function RenewalFormScreen() {
             <WebDateInput
               value={formData.renewalDate}
               onChange={(date) => updateFormData('renewalDate', date)}
-              minimumDate={new Date()}
             />
           ) : (
             <>
@@ -506,22 +513,21 @@ export default function RenewalFormScreen() {
               >
                 <IconSymbol name="calendar" size={20} color={isWeb ? AIRBNB.carbon : '#007AFF'} />
                 <Text style={[styles.dateText, { color: textColor }]}>
-                  {formData.renewalDate.toLocaleDateString('es-ES', {
+                  {formData.renewalDate?.toLocaleDateString('es-ES', {
                     weekday: 'long',
                     year: 'numeric',
                     month: 'long',
                     day: 'numeric',
-                  })}
+                  }) || 'Seleccionar fecha'}
                 </Text>
               </TouchableOpacity>
 
               {showDatePicker && (
                 <DateTimePicker
-                  value={formData.renewalDate}
+                  value={formData.renewalDate || new Date()}
                   mode="date"
                   display="spinner"
                   onChange={onDateChange}
-                  minimumDate={new Date()}
                 />
               )}
             </>
@@ -800,7 +806,6 @@ export default function RenewalFormScreen() {
             <WebDateInput
               value={formData.contractEndDate}
               onChange={(date) => updateFormData('contractEndDate', date)}
-              minimumDate={new Date()}
               placeholder="Sin fecha de permanencia"
             />
           ) : (
@@ -828,7 +833,6 @@ export default function RenewalFormScreen() {
                   mode="date"
                   display="spinner"
                   onChange={onContractEndDateChange}
-                  minimumDate={new Date()}
                 />
               )}
             </>
