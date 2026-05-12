@@ -104,7 +104,8 @@ function WebDateInput({
 
 export default function RenewalFormScreen() {
   const router = useRouter();
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const params = useLocalSearchParams<{ id?: string }>();
+  const id = params.id ?? 'new';
   const isEditing = id !== 'new';
   const { user } = useAuth();
   const { addRenewal, updateRenewal, deleteRenewal, getRenewalById, getHistoryForRenewal } = useRenewals(user?.id);
