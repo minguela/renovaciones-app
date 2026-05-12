@@ -201,3 +201,68 @@ DROP POLICY IF EXISTS "Users can update own attachments" ON storage.objects;
 CREATE POLICY "Users can update own attachments"
   ON storage.objects FOR UPDATE
   USING (bucket_id = 'attachments' AND auth.uid() = owner);
+
+-- =====================================================
+-- NOTIFICATIONS INFRASTRUCTURE
+-- =====================================================
+
+-- Push tokens table (Expo + Web Push)
+CREATE TABLE IF NOT EXISTS push_tokens (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  token TEXT NOT NULL,
+  platform TEXT NOT NULL CHECK (platform IN ('expo', 'web')),
+  device_info TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  UNIQUE(user_id, token)
+);
+
+ALTER TABLE push_tokens ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users manage own push tokens" ON push_tokens;
+CREATE POLICY "Users manage own push tokens"
+  ON push_tokens FOR ALL
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
+
+-- Notification log (tracks every sent notification)
+CREATE TABLE IF NOT EXISTS notification_logs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  renewal_id UUID REFERENCES renewals(id) ON DELETE SET NULL,
+  channel TEXT NOT NULL CHECK (channel IN ('email', 'sms', 'whatsapp', 'telegram', 'push')),
+  status TEXT NOT NULL CHECK (status IN ('pending', 'sent', 'failed', 'bounced')),
+  subject TEXT,
+  body TEXT,
+  recipient TEXT,
+  error_message TEXT,
+  provider_response JSONB,
+  sent_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+ALTER TABLE notification_logs ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users view own notification logs" ON notification_logs;
+CREATE POLICY "Users view own notification logs"
+  ON notification_logs FOR SELECT
+  USING (auth.uid() = user_id);
+
+-- Triggers for updated_at
+DROP TRIGGER IF EXISTS push_tokens_updated_at ON push_tokens;
+CREATE TRIGGER push_tokens_updated_at
+  BEFORE UPDATE ON push_tokens
+  FOR EACH ROW
+  EXECUTE FUNCTION handle_updated_at();
+
+-- VAPID keys for web push (stored as app config, single row)
+CREATE TABLE IF NOT EXISTS app_config (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Enable realtime for notifications
+ALTER TABLE push_tokens REPLICA IDENTITY FULL;
+ALTER TABLE notification_logs REPLICA IDENTITY FULL;
