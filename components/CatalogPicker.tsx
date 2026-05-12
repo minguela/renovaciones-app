@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   Modal,
   View,
@@ -9,6 +9,7 @@ import {
   Platform,
   TextInput,
   Alert,
+  Pressable,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -17,6 +18,17 @@ import { CatalogCategories, CatalogCategory, CatalogOption } from '@/types/catal
 import { RENEWAL_TYPES, COLORS } from '@/types/renewal';
 
 const isWeb = Platform.OS === 'web';
+
+/* ─── Airbnb tokens ─── */
+const TOKENS = {
+  canvas: '#f7f7f7',
+  card: '#ffffff',
+  carbon: '#222222',
+  slate: '#6a6a6a',
+  mist: '#ebebeb',
+  coral: '#ff385c',
+  coralDeep: '#e00b41',
+};
 
 interface CatalogPickerProps {
   visible: boolean;
@@ -35,39 +47,50 @@ interface CatalogPickerProps {
   onAddCategory?: (category: CatalogCategory) => void;
 }
 
-export function CatalogPicker({ visible, onClose, onSelect, customCategories = [], onAddCategory }: CatalogPickerProps) {
+export function CatalogPicker({
+  visible,
+  onClose,
+  onSelect,
+  customCategories = [],
+  onAddCategory,
+}: CatalogPickerProps) {
   const [selectedCategory, setSelectedCategory] = useState<CatalogCategory | null>(null);
   const [addingCategory, setAddingCategory] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
 
   const allCategories = [...CatalogCategories, ...customCategories];
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     setSelectedCategory(null);
     setAddingCategory(false);
     setNewCategoryName('');
     onClose();
-  };
+  }, [onClose]);
 
   const handleSelectCategory = (category: CatalogCategory) => {
     setSelectedCategory(category);
   };
 
-  const handleSelectOption = (option: CatalogOption, category: CatalogCategory) => {
-    const typeInfo = RENEWAL_TYPES.find((t) => t.value === option.defaultType);
-    onSelect({
-      name: option.name,
-      type: option.defaultType,
-      frequency: option.defaultFrequency,
-      cost: option.defaultCost.toString(),
-      provider: option.suggestedProvider || category.name,
-      icon: typeInfo?.icon || category.icon,
-      color: option.defaultColor || category.color,
-      currency: option.defaultCurrency || 'EUR',
-    });
-    setSelectedCategory(null);
-    setAddingCategory(false);
-  };
+  const handleSelectOption = useCallback(
+    (option: CatalogOption, category: CatalogCategory) => {
+      const typeInfo = RENEWAL_TYPES.find((t) => t.value === option.defaultType);
+      const payload = {
+        name: option.name,
+        type: option.defaultType,
+        frequency: option.defaultFrequency,
+        cost: option.defaultCost.toString(),
+        provider: option.suggestedProvider || category.name,
+        icon: typeInfo?.icon || category.icon,
+        color: option.defaultColor || category.color,
+        currency: option.defaultCurrency || 'EUR',
+      };
+      // Cierra primero para evitar glitches visuales
+      handleClose();
+      // Pequeño delay para asegurar que el modal se desmontó antes de actualizar el padre
+      setTimeout(() => onSelect(payload), isWeb ? 50 : 0);
+    },
+    [handleClose, onSelect]
+  );
 
   const handleBack = () => {
     setSelectedCategory(null);
@@ -93,181 +116,185 @@ export function CatalogPicker({ visible, onClose, onSelect, customCategories = [
     setSelectedCategory(newCategory);
   };
 
-  const accentColor = isWeb ? '#ff385c' : '#007AFF';
-  const textColor = isWeb ? '#222222' : '#000000';
-  const secondaryText = isWeb ? '#6a6a6a' : '#8E8E93';
-  const headerBg = isWeb ? '#f7f7f7' : '#F2F2F7';
-  const cardBg = isWeb ? '#ffffff' : '#FFFFFF';
+  /* ─── Render content ─── */
+  const renderContent = () => (
+    <SafeAreaView style={[styles.container, isWeb && styles.webContainer]}>
+      {/* Header */}
+      <View style={styles.header}>
+        {selectedCategory ? (
+          <View style={styles.headerRow}>
+            <TouchableOpacity onPress={handleBack} style={styles.headerButton} hitSlop={8}>
+              <IconSymbol name="arrow.left" size={24} color={TOKENS.coral} />
+            </TouchableOpacity>
+            <View style={styles.headerTitleRow}>
+              <IconSymbol name={selectedCategory.icon as any} size={20} color={TOKENS.coral} />
+              <Text style={styles.headerTitle}>{selectedCategory.name}</Text>
+            </View>
+            <TouchableOpacity onPress={handleClose} style={styles.headerButton} hitSlop={8}>
+              <IconSymbol name="xmark" size={24} color={TOKENS.coral} />
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <View style={styles.headerRow}>
+            <View style={styles.headerSpacer} />
+            <Text style={styles.headerTitle}>Elegir del catálogo</Text>
+            <TouchableOpacity onPress={handleClose} style={styles.headerButton} hitSlop={8}>
+              <IconSymbol name="xmark" size={24} color={TOKENS.coral} />
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
+
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={isWeb ? styles.webScrollContent : undefined}
+        showsVerticalScrollIndicator={false}
+      >
+        {!selectedCategory ? (
+          <>
+            <View style={styles.grid}>
+              {allCategories.map((category) => (
+                <TouchableOpacity
+                  key={category.id}
+                  style={[styles.categoryCard, isWeb && styles.categoryCardWeb]}
+                  onPress={() => handleSelectCategory(category)}
+                  activeOpacity={0.7}
+                >
+                  <View style={[styles.iconContainer, isWeb && styles.iconContainerWeb]}>
+                    <IconSymbol
+                      name={category.icon as any}
+                      size={28}
+                      color={category.color || TOKENS.coral}
+                    />
+                  </View>
+                  <Text style={styles.categoryName} numberOfLines={2}>
+                    {category.name}
+                  </Text>
+                  <Text style={styles.categoryCount}>
+                    {category.options.length} opciones
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {addingCategory ? (
+              <View style={[styles.addCategoryContainer, isWeb && styles.addCategoryContainerWeb]}>
+                <TextInput
+                  style={styles.addCategoryInput}
+                  placeholder="Nombre de nueva categoría"
+                  placeholderTextColor={TOKENS.slate}
+                  value={newCategoryName}
+                  onChangeText={setNewCategoryName}
+                  autoFocus
+                />
+                <View style={styles.addCategoryButtons}>
+                  <Pressable onPress={() => setAddingCategory(false)} style={styles.addCategoryBtnGhost}>
+                    <Text style={styles.addCategoryBtnGhostText}>Cancelar</Text>
+                  </Pressable>
+                  <Pressable onPress={handleAddCategory} style={styles.addCategoryBtnPrimary}>
+                    <Text style={styles.addCategoryBtnPrimaryText}>Añadir</Text>
+                  </Pressable>
+                </View>
+              </View>
+            ) : (
+              <TouchableOpacity
+                style={[styles.addCategoryButtonRow, isWeb && styles.addCategoryButtonRowWeb]}
+                onPress={() => setAddingCategory(true)}
+                activeOpacity={0.7}
+              >
+                <IconSymbol name="plus.circle.fill" size={20} color={TOKENS.coral} />
+                <Text style={styles.addCategoryButtonText}>Añadir nueva categoría</Text>
+              </TouchableOpacity>
+            )}
+          </>
+        ) : (
+          <View style={styles.optionsList}>
+            {selectedCategory.options.map((option, index) => (
+              <Pressable
+                key={`${option.name}-${index}`}
+                style={({ pressed }) => [
+                  styles.optionRow,
+                  isWeb && styles.optionRowWeb,
+                  pressed && styles.optionRowPressed,
+                ]}
+                onPress={() => handleSelectOption(option, selectedCategory)}
+              >
+                <View style={styles.optionInfo}>
+                  <Text style={styles.optionName}>{option.name}</Text>
+                  {option.suggestedProvider && (
+                    <Text style={styles.optionProvider}>{option.suggestedProvider}</Text>
+                  )}
+                </View>
+                <View style={styles.optionMeta}>
+                  <Text style={styles.optionCost}>{option.defaultCost.toFixed(2)} €</Text>
+                  <IconSymbol name="chevron.right" size={18} color={TOKENS.slate} />
+                </View>
+              </Pressable>
+            ))}
+
+            {selectedCategory.options.length === 0 && (
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyStateText}>
+                  Esta categoría está vacía. Añade opciones manualmente en el formulario.
+                </Text>
+              </View>
+            )}
+          </View>
+        )}
+      </ScrollView>
+    </SafeAreaView>
+  );
+
+  if (!visible) return null;
+
+  if (isWeb) {
+    return (
+      <View style={styles.webOverlay}>
+        {renderContent()}
+      </View>
+    );
+  }
 
   return (
     <Modal
       visible={visible}
       animationType="slide"
-      transparent={!isWeb}
+      transparent={false}
       onRequestClose={handleClose}
       statusBarTranslucent
     >
-      <SafeAreaView style={[styles.container, isWeb && styles.webContainer]}>
-        {/* Header */}
-        <View style={[styles.header, { backgroundColor: headerBg }]}>
-          {selectedCategory ? (
-            <View style={styles.headerRow}>
-              <TouchableOpacity onPress={handleBack} style={styles.headerButton}>
-                <IconSymbol name="arrow.left" size={24} color={accentColor} />
-              </TouchableOpacity>
-              <View style={styles.headerTitleRow}>
-                <IconSymbol
-                  name={selectedCategory.icon as any}
-                  size={20}
-                  color={accentColor}
-                />
-                <Text style={[styles.headerTitle, { color: textColor }]}>
-                  {selectedCategory.name}
-                </Text>
-              </View>
-              <TouchableOpacity onPress={handleClose} style={styles.headerButton}>
-                <IconSymbol name="xmark" size={24} color={accentColor} />
-              </TouchableOpacity>
-            </View>
-          ) : (
-            <View style={styles.headerRow}>
-              <View style={styles.headerSpacer} />
-              <Text style={[styles.headerTitle, { color: textColor }]}>
-                Elegir del catálogo
-              </Text>
-              <TouchableOpacity onPress={handleClose} style={styles.headerButton}>
-                <IconSymbol name="xmark" size={24} color={accentColor} />
-              </TouchableOpacity>
-            </View>
-          )}
-        </View>
-
-        <ScrollView
-          style={styles.scrollView}
-          contentContainerStyle={isWeb ? styles.webScrollContent : undefined}
-          showsVerticalScrollIndicator={false}
-        >
-          {!selectedCategory ? (
-            <>
-              <View style={styles.grid}>
-                {allCategories.map((category) => (
-                  <TouchableOpacity
-                    key={category.id}
-                    style={[styles.categoryCard, isWeb && styles.categoryCardWeb]}
-                    onPress={() => handleSelectCategory(category)}
-                    activeOpacity={0.7}
-                  >
-                    <View style={[styles.iconContainer, isWeb && styles.iconContainerWeb]}>
-                      <IconSymbol
-                        name={category.icon as any}
-                        size={28}
-                        color={category.color || accentColor}
-                      />
-                    </View>
-                    <Text
-                      style={[styles.categoryName, { color: textColor }]}
-                      numberOfLines={2}
-                    >
-                      {category.name}
-                    </Text>
-                    <Text style={[styles.categoryCount, { color: secondaryText }]}>
-                      {category.options.length} opciones
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-
-              {addingCategory ? (
-                <View style={[styles.addCategoryContainer, isWeb && { backgroundColor: cardBg, borderColor: '#ebebeb' }]}>
-                  <TextInput
-                    style={[styles.addCategoryInput, { color: textColor }]}
-                    placeholder="Nombre de nueva categoría"
-                    placeholderTextColor={secondaryText}
-                    value={newCategoryName}
-                    onChangeText={setNewCategoryName}
-                    autoFocus
-                  />
-                  <View style={styles.addCategoryButtons}>
-                    <TouchableOpacity onPress={() => setAddingCategory(false)} style={styles.addCategoryButton}>
-                      <Text style={{ color: secondaryText }}>Cancelar</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity onPress={handleAddCategory} style={[styles.addCategoryButton, styles.addCategoryButtonPrimary]}>
-                      <Text style={{ color: '#fff', fontWeight: '600' }}>Añadir</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              ) : (
-                <TouchableOpacity
-                  style={[styles.addCategoryButtonRow, isWeb && { backgroundColor: cardBg, borderColor: '#ebebeb' }]}
-                  onPress={() => setAddingCategory(true)}
-                >
-                  <IconSymbol name="plus.circle.fill" size={20} color={accentColor} />
-                  <Text style={[styles.addCategoryButtonText, { color: accentColor }]}>
-                    Añadir nueva categoría
-                  </Text>
-                </TouchableOpacity>
-              )}
-            </>
-          ) : (
-            <View style={styles.optionsList}>
-              {selectedCategory.options.map((option, index) => (
-                <TouchableOpacity
-                  key={`${option.name}-${index}`}
-                  style={[styles.optionRow, isWeb && styles.optionRowWeb]}
-                  onPress={() => handleSelectOption(option, selectedCategory)}
-                  activeOpacity={0.7}
-                >
-                  <View style={styles.optionInfo}>
-                    <Text style={[styles.optionName, { color: textColor }]}>
-                      {option.name}
-                    </Text>
-                    {option.suggestedProvider && (
-                      <Text style={[styles.optionProvider, { color: secondaryText }]}>
-                        {option.suggestedProvider}
-                      </Text>
-                    )}
-                  </View>
-                  <View style={styles.optionMeta}>
-                    <Text style={[styles.optionCost, { color: accentColor }]}>
-                      {option.defaultCost.toFixed(2)} €
-                    </Text>
-                    <IconSymbol
-                      name="chevron.right"
-                      size={18}
-                      color={secondaryText}
-                    />
-                  </View>
-                </TouchableOpacity>
-              ))}
-
-              {selectedCategory.options.length === 0 && (
-                <View style={styles.emptyState}>
-                  <Text style={[styles.emptyStateText, { color: secondaryText }]}>
-                    Esta categoría está vacía. Añade opciones manualmente en el formulario.
-                  </Text>
-                </View>
-              )}
-            </View>
-          )}
-        </ScrollView>
-      </SafeAreaView>
+      {renderContent()}
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
+  /* Overlay (web only) */
+  webOverlay: {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 9999,
+    backgroundColor: TOKENS.canvas,
+  } as any,
+
   container: {
     flex: 1,
     backgroundColor: '#F2F2F7',
   },
   webContainer: {
-    backgroundColor: '#f7f7f7',
+    backgroundColor: TOKENS.canvas,
   },
+
+  /* Header */
   header: {
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: isWeb ? 'rgba(186, 215, 247, 0.12)' : '#E5E5EA',
+    borderBottomColor: TOKENS.mist,
+    backgroundColor: TOKENS.card,
   },
   headerRow: {
     flexDirection: 'row',
@@ -282,6 +309,8 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
+    color: TOKENS.carbon,
+    letterSpacing: -0.2,
   },
   headerButton: {
     padding: 4,
@@ -291,6 +320,7 @@ const styles = StyleSheet.create({
   headerSpacer: {
     minWidth: 32,
   },
+
   scrollView: {
     flex: 1,
   },
@@ -301,6 +331,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 16,
   },
+
+  /* Grid */
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -325,10 +357,9 @@ const styles = StyleSheet.create({
     borderColor: '#E5E5EA',
   },
   categoryCardWeb: {
-    backgroundColor: 'rgba(186, 214, 247, 0.03)',
-    borderColor: 'rgba(186, 215, 247, 0.12)',
-    boxShadow:
-      'rgba(199, 211, 234, 0.12) 0px 1px 1px 0px inset, rgba(199, 211, 234, 0.05) 0px 24px 48px 0px inset, rgba(6, 6, 14, 0.7) 0px 24px 32px 0px',
+    backgroundColor: TOKENS.card,
+    borderColor: TOKENS.mist,
+    boxShadow: `${TOKENS.mist} 0px 1px 1px 0px inset, rgba(0,0,0,0.04) 0px 2px 6px 0px, rgba(0,0,0,0.1) 0px 4px 8px 0px`,
   } as any,
   iconContainer: {
     width: 52,
@@ -340,20 +371,24 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   iconContainerWeb: {
-    backgroundColor: 'rgba(102, 58, 243, 0.1)',
+    backgroundColor: 'rgba(255, 56, 92, 0.08)',
     borderWidth: 1,
-    borderColor: 'rgba(102, 58, 243, 0.2)',
+    borderColor: 'rgba(255, 56, 92, 0.15)',
   },
   categoryName: {
     fontSize: 14,
     fontWeight: '600',
     textAlign: 'center',
     lineHeight: 18,
+    color: TOKENS.carbon,
   },
   categoryCount: {
     fontSize: 12,
     marginTop: 4,
+    color: TOKENS.slate,
   },
+
+  /* Add category */
   addCategoryButtonRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -368,9 +403,14 @@ const styles = StyleSheet.create({
     borderColor: '#E5E5EA',
     borderStyle: 'dashed',
   },
+  addCategoryButtonRowWeb: {
+    backgroundColor: TOKENS.card,
+    borderColor: TOKENS.mist,
+  },
   addCategoryButtonText: {
     fontSize: 15,
     fontWeight: '500',
+    color: TOKENS.coral,
   },
   addCategoryContainer: {
     marginHorizontal: 16,
@@ -381,28 +421,46 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E5E5EA',
   },
+  addCategoryContainerWeb: {
+    backgroundColor: TOKENS.card,
+    borderColor: TOKENS.mist,
+  },
   addCategoryInput: {
     fontSize: 16,
     paddingVertical: 10,
     paddingHorizontal: 12,
     borderWidth: 1,
-    borderColor: '#E5E5EA',
+    borderColor: TOKENS.mist,
     borderRadius: 8,
     marginBottom: 12,
+    color: TOKENS.carbon,
   },
   addCategoryButtons: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
     gap: 12,
   },
-  addCategoryButton: {
+  addCategoryBtnGhost: {
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
   },
-  addCategoryButtonPrimary: {
-    backgroundColor: '#ff385c',
+  addCategoryBtnGhostText: {
+    color: TOKENS.slate,
+    fontWeight: '500',
   },
+  addCategoryBtnPrimary: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: TOKENS.coral,
+  },
+  addCategoryBtnPrimaryText: {
+    color: '#fff',
+    fontWeight: '600',
+  },
+
+  /* Options list */
   optionsList: {
     paddingHorizontal: 16,
     paddingVertical: 8,
@@ -420,21 +478,26 @@ const styles = StyleSheet.create({
     borderColor: '#E5E5EA',
   },
   optionRowWeb: {
-    backgroundColor: 'rgba(186, 214, 247, 0.03)',
-    borderColor: 'rgba(186, 215, 247, 0.12)',
-    boxShadow:
-      'rgba(199, 211, 234, 0.12) 0px 1px 1px 0px inset, rgba(199, 211, 234, 0.05) 0px 24px 48px 0px inset, rgba(6, 6, 14, 0.7) 0px 24px 32px 0px',
+    backgroundColor: TOKENS.card,
+    borderColor: TOKENS.mist,
+    boxShadow: `${TOKENS.mist} 0px 1px 1px 0px inset, rgba(0,0,0,0.04) 0px 2px 6px 0px, rgba(0,0,0,0.1) 0px 4px 8px 0px`,
   } as any,
+  optionRowPressed: {
+    opacity: 0.7,
+    backgroundColor: TOKENS.canvas,
+  },
   optionInfo: {
     flex: 1,
   },
   optionName: {
     fontSize: 16,
     fontWeight: '500',
+    color: TOKENS.carbon,
   },
   optionProvider: {
     fontSize: 13,
     marginTop: 2,
+    color: TOKENS.slate,
   },
   optionMeta: {
     flexDirection: 'row',
@@ -444,6 +507,7 @@ const styles = StyleSheet.create({
   optionCost: {
     fontSize: 14,
     fontWeight: '600',
+    color: TOKENS.coral,
   },
   emptyState: {
     paddingVertical: 40,
@@ -453,5 +517,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: 'center',
     paddingHorizontal: 24,
+    color: TOKENS.slate,
   },
 });
