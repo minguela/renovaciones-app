@@ -1,6 +1,5 @@
 import React from 'react';
 import { TouchableOpacity, Text, StyleSheet, ActivityIndicator, Platform } from 'react-native';
-import { useThemeColor } from '@/hooks/use-theme-color';
 
 interface ButtonProps {
   title: string;
@@ -9,36 +8,35 @@ interface ButtonProps {
   disabled?: boolean;
   loading?: boolean;
   size?: 'sm' | 'md' | 'lg';
+  style?: any;
+  textStyle?: any;
 }
 
 const isWeb = Platform.OS === 'web';
 
-export function Button({ title, onPress, variant = 'primary', disabled, loading, size = 'md' }: ButtonProps) {
-  const tintColor = useThemeColor({ light: '#007AFF', dark: '#0A84FF' }, 'tint');
-  const dangerColor = isWeb ? '#FF453A' : '#FF3B30';
-
+export function Button({ title, onPress, variant = 'primary', disabled, loading, size = 'md', style, textStyle }: ButtonProps) {
   const getBackgroundColor = () => {
-    if (disabled || loading) return isWeb ? 'rgba(186, 214, 247, 0.06)' : '#C7C7CC';
-    if (variant === 'primary') return isWeb ? 'rgba(186, 214, 247, 0.06)' : tintColor;
-    if (variant === 'danger') return isWeb ? 'rgba(255, 69, 58, 0.1)' : dangerColor;
+    if (disabled || loading) return isWeb ? '#f7f7f7' : '#C7C7CC';
+    if (variant === 'primary') return isWeb ? '#ff385c' : '#007AFF';
+    if (variant === 'danger') return isWeb ? 'transparent' : '#FF3B30';
     if (variant === 'ghost') return 'transparent';
     return 'transparent';
   };
 
   const getTextColor = () => {
-    if (disabled || loading) return isWeb ? '#81899b' : '#FFFFFF';
-    if (variant === 'primary') return isWeb ? '#ffffff' : '#FFFFFF';
-    if (variant === 'danger') return isWeb ? '#FF453A' : '#FFFFFF';
-    if (variant === 'ghost') return isWeb ? '#d1e4fa' : tintColor;
-    return isWeb ? '#d1e4fa' : tintColor;
+    if (disabled || loading) return isWeb ? '#c1c1c1' : '#FFFFFF';
+    if (variant === 'primary') return '#FFFFFF';
+    if (variant === 'danger') return isWeb ? '#ff385c' : '#FFFFFF';
+    if (variant === 'ghost') return isWeb ? '#222222' : '#007AFF';
+    return isWeb ? '#222222' : '#007AFF';
   };
 
   const getBorderColor = () => {
-    if (disabled || loading) return isWeb ? 'rgba(186, 214, 247, 0.06)' : 'transparent';
-    if (variant === 'primary') return isWeb ? 'rgba(255, 255, 255, 0.2)' : 'transparent';
-    if (variant === 'danger') return isWeb ? 'rgba(255, 69, 58, 0.3)' : 'transparent';
+    if (disabled || loading) return isWeb ? '#ebebeb' : 'transparent';
+    if (variant === 'primary') return 'transparent';
+    if (variant === 'danger') return isWeb ? '#ff385c' : 'transparent';
     if (variant === 'ghost') return 'transparent';
-    return isWeb ? 'rgba(186, 215, 247, 0.12)' : tintColor;
+    return isWeb ? '#222222' : '#007AFF';
   };
 
   const sizeStyles = {
@@ -54,11 +52,12 @@ export function Button({ title, onPress, variant = 'primary', disabled, loading,
         {
           backgroundColor: getBackgroundColor(),
           borderColor: getBorderColor(),
-          borderRadius: isWeb ? 999 : 10,
+          borderRadius: isWeb ? 8 : 10,
           paddingVertical: sizeStyles[size].paddingVertical,
           paddingHorizontal: sizeStyles[size].paddingHorizontal,
         },
-        variant === 'secondary' && { borderWidth: isWeb ? 1 : 1 },
+        (variant === 'secondary' || variant === 'danger') && { borderWidth: isWeb ? 1 : (variant === 'secondary' ? 1 : 0) },
+        style,
       ]}
       onPress={onPress}
       disabled={disabled || loading}
@@ -67,7 +66,7 @@ export function Button({ title, onPress, variant = 'primary', disabled, loading,
       {loading ? (
         <ActivityIndicator color={getTextColor()} />
       ) : (
-        <Text style={[styles.text, { color: getTextColor(), fontSize: sizeStyles[size].fontSize }]}>
+        <Text style={[styles.text, { color: getTextColor(), fontSize: sizeStyles[size].fontSize }, textStyle]}>
           {title}
         </Text>
       )}

@@ -7,8 +7,10 @@ CREATE TABLE IF NOT EXISTS profiles (
   email TEXT NOT NULL,
   whatsapp_number TEXT,
   telegram_chat_id TEXT,
+  sms_number TEXT,
+  email_address TEXT,
   notifications_enabled BOOLEAN DEFAULT false,
-  notification_method TEXT DEFAULT 'none' CHECK (notification_method IN ('none', 'whatsapp', 'telegram', 'email')),
+  notification_method TEXT DEFAULT 'none' CHECK (notification_method IN ('none', 'email', 'sms', 'whatsapp', 'telegram', 'push')),
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -30,11 +32,12 @@ CREATE TABLE IF NOT EXISTS renewals (
   notification_enabled BOOLEAN DEFAULT true,
   notification_days_before INTEGER DEFAULT 7,
   status TEXT DEFAULT 'active',
-  payment_method TEXT,
+  payment_method TEXT CHECK (payment_method IN ('card', 'direct_debit', 'paypal', 'bizum', 'other')),
   bank_account TEXT,
   tags TEXT[] DEFAULT '{}',
   auto_renew BOOLEAN DEFAULT true,
   contract_end_date DATE,
+  notification_method TEXT DEFAULT 'push' CHECK (notification_method IN ('push', 'email', 'sms', 'whatsapp', 'telegram')),
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -42,6 +45,8 @@ CREATE TABLE IF NOT EXISTS renewals (
 -- Add new columns idempotently (for existing tables)
 DO $$
 BEGIN
+  ALTER TABLE profiles ADD COLUMN IF NOT EXISTS sms_number TEXT;
+  ALTER TABLE profiles ADD COLUMN IF NOT EXISTS email_address TEXT;
   ALTER TABLE renewals ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'active';
   ALTER TABLE renewals ADD COLUMN IF NOT EXISTS payment_method TEXT;
   ALTER TABLE renewals ADD COLUMN IF NOT EXISTS bank_account TEXT;
@@ -49,6 +54,7 @@ BEGIN
   ALTER TABLE renewals ADD COLUMN IF NOT EXISTS auto_renew BOOLEAN DEFAULT true;
   ALTER TABLE renewals ADD COLUMN IF NOT EXISTS contract_end_date DATE;
   ALTER TABLE renewals ADD COLUMN IF NOT EXISTS attachments TEXT[] DEFAULT '{}';
+  ALTER TABLE renewals ADD COLUMN IF NOT EXISTS notification_method TEXT DEFAULT 'push';
 EXCEPTION
   WHEN duplicate_column THEN NULL;
 END $$;

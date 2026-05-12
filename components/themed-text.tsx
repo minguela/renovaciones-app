@@ -70,7 +70,7 @@ const styles = StyleSheet.create({
   link: {
     lineHeight: isWeb ? 21 : 30,
     fontSize: isWeb ? 14 : 16,
-    color: isWeb ? '#b6d9fc' : '#0a7ea4',
+    color: isWeb ? '#ff385c' : '#0a7ea4',
     letterSpacing: isWeb ? -0.01 : 0,
     fontFamily: isWeb ? Fonts.sans : undefined,
   },

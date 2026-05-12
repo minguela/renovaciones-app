@@ -5,25 +5,25 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Card } from '@/components/ui/Card';
 import type { Renewal } from '@/types/renewal';
 import { getDaysUntilRenewal, getRenewalStatus, formatCurrency } from '@/types/renewal';
-import { useThemeColor } from '@/hooks/use-theme-color';
 
 const isWeb = Platform.OS === 'web';
 
 interface RenewalCardProps {
   renewal: Renewal;
+  onPress?: (renewal: Renewal) => void;
 }
 
-export function RenewalCard({ renewal }: RenewalCardProps) {
+export function RenewalCard({ renewal, onPress }: RenewalCardProps) {
   const router = useRouter();
   const daysUntil = getDaysUntilRenewal(renewal.renewalDate);
   const status = getRenewalStatus(daysUntil);
 
   const getStatusColor = () => {
     switch (status) {
-      case 'overdue': return isWeb ? '#FF453A' : '#FF3B30';
-      case 'soon': return isWeb ? '#FF9F0A' : '#FF9500';
-      case 'upcoming': return isWeb ? '#30D158' : '#34C759';
-      default: return isWeb ? '#81899b' : '#8E8E93';
+      case 'overdue': return '#FF3B30';
+      case 'soon': return '#FF9500';
+      case 'upcoming': return '#30D158';
+      default: return '#6a6a6a';
     }
   };
 
@@ -34,38 +34,43 @@ export function RenewalCard({ renewal }: RenewalCardProps) {
     return `Vence en ${daysUntil} días`;
   };
 
-  const iconColor = renewal.color || (isWeb ? '#b6d9fc' : '#007AFF');
-  const textColor = useThemeColor({ light: '#000000', dark: '#FFFFFF' }, 'text');
-  const secondaryTextColor = isWeb ? '#9da7ba' : useThemeColor({ light: '#666666', dark: '#999999' }, 'text');
+  const iconColor = renewal.color || (isWeb ? '#222222' : '#007AFF');
+  const textPrimary = isWeb ? '#222222' : '#000000';
+  const textSecondary = isWeb ? '#6a6a6a' : '#666666';
+
+  const handlePress = () => {
+    if (onPress) {
+      onPress(renewal);
+    } else {
+      router.push(`/renewal/${renewal.id}`);
+    }
+  };
 
   return (
-    <TouchableOpacity
-      activeOpacity={0.7}
-      onPress={() => router.push(`/renewal/${renewal.id}`)}
-    >
-      <Card variant={isWeb ? 'glass' : 'default'}>
+    <TouchableOpacity activeOpacity={0.7} onPress={handlePress}>
+      <Card variant="default">
         <View style={styles.container}>
-          <View style={[styles.iconContainer, { backgroundColor: `${iconColor}20` }]}>
+          <View style={[styles.iconCircle, { backgroundColor: iconColor }]}>
             <IconSymbol
               name={(renewal.icon as any) || 'tag.fill'}
-              size={24}
-              color={iconColor}
+              size={20}
+              color="#FFFFFF"
             />
           </View>
 
           <View style={styles.content}>
-            <Text style={[styles.name, { color: textColor }]} numberOfLines={1}>
+            <Text style={[styles.name, { color: textPrimary }]} numberOfLines={1}>
               {renewal.name}
             </Text>
             {renewal.provider && (
-              <Text style={[styles.provider, { color: secondaryTextColor }]} numberOfLines={1}>
+              <Text style={[styles.provider, { color: textSecondary }]} numberOfLines={1}>
                 {renewal.provider}
               </Text>
             )}
             <View style={styles.footer}>
-              <Text style={[styles.cost, { color: textColor }]}>
+              <Text style={[styles.cost, { color: textPrimary }]}>
                 {formatCurrency(renewal.cost, renewal.currency)}
-                <Text style={[styles.frequency, { color: secondaryTextColor }]}>
+                <Text style={[styles.frequency, { color: textSecondary }]}>
                   {' '}/ {getFrequencyLabel(renewal.frequency)}
                 </Text>
               </Text>
@@ -100,24 +105,24 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  iconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
+  iconCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: 14,
   },
   content: {
     flex: 1,
   },
   name: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
     marginBottom: 2,
   },
   provider: {
-    fontSize: 13,
+    fontSize: 12,
     marginBottom: 4,
   },
   footer: {
@@ -126,7 +131,7 @@ const styles = StyleSheet.create({
   },
   cost: {
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '600',
   },
   frequency: {
     fontSize: 12,

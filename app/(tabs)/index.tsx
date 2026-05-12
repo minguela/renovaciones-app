@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { StyleSheet, FlatList, View, ActivityIndicator, RefreshControl, ScrollView, Platform, TouchableOpacity } from 'react-native';
+import { StyleSheet, FlatList, View, ActivityIndicator, RefreshControl, ScrollView, Platform, TouchableOpacity, useWindowDimensions } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -19,6 +19,16 @@ import { exportRenewalsToCSV, exportToCSVFile } from '@/lib/export';
 
 const isWeb = Platform.OS === 'web';
 
+const AIRBNB = {
+  canvas: '#f7f7f7',
+  card: '#ffffff',
+  carbon: '#222222',
+  slate: '#6a6a6a',
+  mist: '#ebebeb',
+  coral: '#ff385c',
+  coralDeep: '#e00b41',
+};
+
 type FilterStatus = 'all' | 'active' | 'pending_cancellation' | 'cancelled';
 
 const FILTER_CHIPS: { value: FilterStatus; label: string }[] = [
@@ -30,10 +40,14 @@ const FILTER_CHIPS: { value: FilterStatus; label: string }[] = [
 
 export default function HomeScreen() {
   const router = useRouter();
+  const { width } = useWindowDimensions();
+  const isLargeScreen = isWeb && width >= 1024;
+
   const {
     user,
     isAuthenticated,
     loading: authLoading,
+    authProcessing,
     signOut,
     signIn,
     signUp,
@@ -129,7 +143,7 @@ export default function HomeScreen() {
         onSignUp={signUp}
         onGoogleSignIn={signInWithGoogle}
         onAppleSignIn={signInWithApple}
-        loading={authLoading}
+        loading={authProcessing}
         authMessage={authMessage}
         authError={authError}
       />
@@ -144,199 +158,257 @@ export default function HomeScreen() {
     );
   }
 
+  const mainContent = (
+    <ScrollView
+      showsVerticalScrollIndicator={false}
+      contentContainerStyle={isWeb ? styles.webScrollContent : undefined}
+      style={{ flex: 1 }}
+    >
+      {isWeb && (
+        <View style={styles.webHeader}>
+          <ThemedText type="display" style={styles.webTitle}>
+            Renovaciones
+          </ThemedText>
+          <ThemedText type="subtitle" style={styles.webSubtitle}>
+            Gestiona tus seguros, suscripciones y servicios
+          </ThemedText>
+        </View>
+      )}
+
+      {renewals.length > 0 && (
+        <>
+          <View style={[styles.kpiContainer, isWeb && styles.webKpiContainer]}>
+            <View style={[styles.kpiCard, isWeb && styles.webKpiCard]}>
+              <ThemedText style={styles.kpiLabel}>Gasto mensual</ThemedText>
+              <ThemedText style={[styles.kpiValue, isWeb && styles.webKpiValue]}>
+                €{kpiData.totalMonthly.toFixed(2)}
+              </ThemedText>
+            </View>
+            <View style={[styles.kpiCard, isWeb && styles.webKpiCard]}>
+              <ThemedText style={styles.kpiLabel}>Gasto anual</ThemedText>
+              <ThemedText style={[styles.kpiValue, isWeb && styles.webKpiValue]}>
+                €{kpiData.totalYearly.toFixed(2)}
+              </ThemedText>
+            </View>
+            <View style={[styles.kpiCard, isWeb && styles.webKpiCard]}>
+              <ThemedText style={styles.kpiLabel}>Próximas 30d</ThemedText>
+              <ThemedText style={[styles.kpiValue, isWeb && styles.webKpiValue]}>
+                {kpiData.upcoming30}
+              </ThemedText>
+            </View>
+            <View style={[styles.kpiCard, isWeb && styles.webKpiCard]}>
+              <ThemedText style={styles.kpiLabel}>Categoría más cara</ThemedText>
+              <ThemedText style={[styles.kpiValue, isWeb && styles.webKpiValue]}>
+                {kpiData.mostExpensiveCategory
+                  ? kpiData.mostExpensiveCategory[0].charAt(0).toUpperCase() +
+                    kpiData.mostExpensiveCategory[0].slice(1)
+                  : '-'}
+              </ThemedText>
+            </View>
+          </View>
+
+          <View style={[styles.timelineContainer, isWeb && styles.webTimelineContainer]}>
+            <ThemedText style={[styles.sectionTitle, isWeb && styles.webSectionTitle]}>
+              Timeline de renovaciones
+            </ThemedText>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.timelineScroll}
+            >
+              {Object.entries(timeline).map(([month, items]) => (
+                <View key={month} style={[styles.timelineItem, isWeb && styles.webTimelineItem]}>
+                  <ThemedText style={[styles.timelineMonth, isWeb && styles.webTimelineMonth]}>
+                    {month}
+                  </ThemedText>
+                  <ThemedText style={[styles.timelineNames, isWeb && styles.webTimelineNames]}>
+                    {items.map((i) => i.name).join(', ')}
+                  </ThemedText>
+                </View>
+              ))}
+            </ScrollView>
+          </View>
+
+          {savings.length > 0 && (
+            <View style={[styles.savingsContainer, isWeb && styles.webSavingsContainer]}>
+              <ThemedText style={[styles.sectionTitle, isWeb && styles.webSectionTitle]}>
+                Posibles ahorros
+              </ThemedText>
+              {savings.map((item) => (
+                <View key={item.id} style={[styles.savingRow, isWeb && styles.webSavingRow]}>
+                  <ThemedText style={styles.savingName}>{item.name}</ThemedText>
+                  <ThemedText style={[styles.savingAmount, isWeb && styles.webSavingAmount]}>
+                    -€{item.yearlySaving.toFixed(2)}/año
+                  </ThemedText>
+                </View>
+              ))}
+            </View>
+          )}
+        </>
+      )}
+
+      <View style={styles.filterContainer}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          <View style={styles.filterRow}>
+            {FILTER_CHIPS.map((chip) => {
+              const isActive = filterStatus === chip.value;
+              return (
+                <TouchableOpacity
+                  key={chip.value}
+                  style={[
+                    styles.filterChip,
+                    !isActive && isWeb && styles.filterChipWeb,
+                    isActive && (isWeb ? styles.filterChipActiveWeb : styles.filterChipActive),
+                  ]}
+                  onPress={() => setFilterStatus(chip.value)}
+                >
+                  <ThemedText
+                    style={[
+                      styles.filterChipText,
+                      !isActive && isWeb && styles.filterChipTextWeb,
+                      isActive && (isWeb ? styles.filterChipTextActiveWeb : styles.filterChipTextActive),
+                    ]}
+                  >
+                    {chip.label}
+                  </ThemedText>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </ScrollView>
+      </View>
+
+      <FlatList
+        data={filteredRenewals}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => <RenewalCard renewal={item} />}
+        contentContainerStyle={filteredRenewals.length === 0 && styles.emptyList}
+        ListEmptyComponent={<EmptyState />}
+        refreshControl={
+          <RefreshControl refreshing={loading} onRefresh={refresh} tintColor={tintColor} />
+        }
+        showsVerticalScrollIndicator={false}
+        scrollEnabled={false}
+      />
+    </ScrollView>
+  );
+
+  const sidePanel = isLargeScreen ? (
+    <View style={styles.sidePanel}>
+      <View style={styles.sidePanelContent}>
+        <ThemedText style={styles.sidePanelTitle}>Acciones</ThemedText>
+
+        <TouchableOpacity
+          style={styles.primaryActionButton}
+          onPress={() => router.push('/renewal/new')}
+          activeOpacity={0.8}
+        >
+          <ThemedText style={styles.primaryActionButtonText}>+ Nueva renovación</ThemedText>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.secondaryActionButton}
+          onPress={handleExportCSV}
+          activeOpacity={0.8}
+        >
+          <ThemedText style={styles.secondaryActionButtonText}>Exportar CSV</ThemedText>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.secondaryActionButton}
+          onPress={() => setShowSettings(!showSettings)}
+          activeOpacity={0.8}
+        >
+          <ThemedText style={styles.secondaryActionButtonText}>
+            {showSettings ? 'Ocultar ajustes' : 'Ajustes de notificación'}
+          </ThemedText>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.secondaryActionButton}
+          onPress={handleSignOut}
+          activeOpacity={0.8}
+        >
+          <ThemedText style={[styles.secondaryActionButtonText, { color: AIRBNB.coral }]}>
+            Cerrar sesión
+          </ThemedText>
+        </TouchableOpacity>
+
+        {showSettings && (
+          <View style={{ marginTop: 16 }}>
+            <NotificationSettings />
+          </View>
+        )}
+      </View>
+    </View>
+  ) : null;
+
   return (
     <SafeAreaView style={[styles.container, isWeb && styles.webContainer]}>
       <Stack.Screen
         options={{
           title: 'Mis Renovaciones',
-          headerRight: () => (
-            <View style={{ flexDirection: 'row', gap: 8 }}>
-              {isWeb ? (
-                <TouchableOpacity
-                  style={styles.exportButtonWeb}
-                  onPress={handleExportCSV}
-                  activeOpacity={0.8}
-                >
-                  <ThemedText style={styles.exportButtonWebText}>Exportar CSV</ThemedText>
-                </TouchableOpacity>
-              ) : (
+          headerRight: () =>
+            isLargeScreen ? null : (
+              <View style={{ flexDirection: 'row', gap: 8 }}>
+                {isWeb ? (
+                  <TouchableOpacity
+                    style={styles.exportButtonWeb}
+                    onPress={handleExportCSV}
+                    activeOpacity={0.8}
+                  >
+                    <ThemedText style={styles.exportButtonWebText}>Exportar CSV</ThemedText>
+                  </TouchableOpacity>
+                ) : (
+                  <Button
+                    title="Exportar"
+                    onPress={handleExportCSV}
+                    variant="secondary"
+                    size="sm"
+                  />
+                )}
                 <Button
-                  title="Exportar"
-                  onPress={handleExportCSV}
+                  title="⚙️"
+                  onPress={() => setShowSettings(!showSettings)}
                   variant="secondary"
                   size="sm"
                 />
-              )}
-              <Button
-                title="⚙️"
-                onPress={() => setShowSettings(!showSettings)}
-                variant="secondary"
-                size="sm"
-              />
-              <Button
-                title="Salir"
-                onPress={handleSignOut}
-                variant="danger"
-                size="sm"
-              />
-            </View>
-          ),
+                <Button
+                  title="Salir"
+                  onPress={handleSignOut}
+                  variant="danger"
+                  size="sm"
+                />
+              </View>
+            ),
         }}
       />
 
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={isWeb ? styles.webScrollContent : undefined}
-      >
-        {isWeb && (
-          <View style={styles.webHeader}>
-            <ThemedText type="display" style={styles.webTitle}>
-              Renovaciones
-            </ThemedText>
-            <ThemedText type="subtitle" style={styles.webSubtitle}>
-              Gestiona tus seguros, suscripciones y servicios
-            </ThemedText>
-          </View>
-        )}
-
-        {showSettings && (
-          <View style={styles.settingsContainer}>
-            <NotificationSettings />
-          </View>
-        )}
-
-        {renewals.length > 0 && (
-          <>
-            <View style={[styles.kpiContainer, isWeb && styles.webKpiContainer]}>
-              <View style={[styles.kpiCard, isWeb && styles.webKpiCard]}>
-                <ThemedText style={styles.kpiLabel}>Gasto mensual</ThemedText>
-                <ThemedText style={[styles.kpiValue, isWeb && styles.webKpiValue]}>
-                  €{kpiData.totalMonthly.toFixed(2)}
-                </ThemedText>
-              </View>
-              <View style={[styles.kpiCard, isWeb && styles.webKpiCard]}>
-                <ThemedText style={styles.kpiLabel}>Gasto anual</ThemedText>
-                <ThemedText style={[styles.kpiValue, isWeb && styles.webKpiValue]}>
-                  €{kpiData.totalYearly.toFixed(2)}
-                </ThemedText>
-              </View>
-              <View style={[styles.kpiCard, isWeb && styles.webKpiCard]}>
-                <ThemedText style={styles.kpiLabel}>Próximas 30d</ThemedText>
-                <ThemedText style={[styles.kpiValue, isWeb && styles.webKpiValue]}>
-                  {kpiData.upcoming30}
-                </ThemedText>
-              </View>
-              <View style={[styles.kpiCard, isWeb && styles.webKpiCard]}>
-                <ThemedText style={styles.kpiLabel}>Categoría más cara</ThemedText>
-                <ThemedText style={[styles.kpiValue, isWeb && styles.webKpiValue]}>
-                  {kpiData.mostExpensiveCategory
-                    ? kpiData.mostExpensiveCategory[0].charAt(0).toUpperCase() +
-                      kpiData.mostExpensiveCategory[0].slice(1)
-                    : '-'}
-                </ThemedText>
-              </View>
-            </View>
-
-            <View style={[styles.timelineContainer, isWeb && styles.webTimelineContainer]}>
-              <ThemedText style={[styles.sectionTitle, isWeb && styles.webSectionTitle]}>
-                Timeline de renovaciones
-              </ThemedText>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.timelineScroll}
-              >
-                {Object.entries(timeline).map(([month, items]) => (
-                  <View key={month} style={[styles.timelineItem, isWeb && styles.webTimelineItem]}>
-                    <ThemedText style={[styles.timelineMonth, isWeb && styles.webTimelineMonth]}>
-                      {month}
-                    </ThemedText>
-                    <ThemedText style={[styles.timelineNames, isWeb && styles.webTimelineNames]}>
-                      {items.map((i) => i.name).join(', ')}
-                    </ThemedText>
-                  </View>
-                ))}
-              </ScrollView>
-            </View>
-
-            {savings.length > 0 && (
-              <View style={[styles.savingsContainer, isWeb && styles.webSavingsContainer]}>
-                <ThemedText style={[styles.sectionTitle, isWeb && styles.webSectionTitle]}>
-                  Posibles ahorros
-                </ThemedText>
-                {savings.map((item) => (
-                  <View key={item.id} style={[styles.savingRow, isWeb && styles.webSavingRow]}>
-                    <ThemedText style={styles.savingName}>{item.name}</ThemedText>
-                    <ThemedText style={[styles.savingAmount, isWeb && styles.webSavingAmount]}>
-                      -€{item.yearlySaving.toFixed(2)}/año
-                    </ThemedText>
-                  </View>
-                ))}
-              </View>
-            )}
-          </>
-        )}
-
-        <View style={styles.filterContainer}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <View style={styles.filterRow}>
-              {FILTER_CHIPS.map((chip) => {
-                const isActive = filterStatus === chip.value;
-                return (
-                  <TouchableOpacity
-                    key={chip.value}
-                    style={[
-                      styles.filterChip,
-                      !isActive && isWeb && styles.filterChipWeb,
-                      isActive && (isWeb ? styles.filterChipActiveWeb : styles.filterChipActive),
-                    ]}
-                    onPress={() => setFilterStatus(chip.value)}
-                  >
-                    <ThemedText
-                      style={[
-                        styles.filterChipText,
-                        !isActive && isWeb && styles.filterChipTextWeb,
-                        isActive && (isWeb ? styles.filterChipTextActiveWeb : styles.filterChipTextActive),
-                      ]}
-                    >
-                      {chip.label}
-                    </ThemedText>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          </ScrollView>
+      {isLargeScreen ? (
+        <View style={styles.splitLayout}>
+          <View style={styles.leftPanel}>{mainContent}</View>
+          {sidePanel}
         </View>
-
-        <FlatList
-          data={filteredRenewals}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => <RenewalCard renewal={item} />}
-          contentContainerStyle={filteredRenewals.length === 0 && styles.emptyList}
-          ListEmptyComponent={<EmptyState />}
-          refreshControl={
-            <RefreshControl refreshing={loading} onRefresh={refresh} tintColor={tintColor} />
-          }
-          showsVerticalScrollIndicator={false}
-          scrollEnabled={false}
-        />
-      </ScrollView>
-
-      <View style={styles.fabContainer}>
-        {isWeb && (
-          <TouchableOpacity
-            style={styles.exportButtonWeb}
-            onPress={handleExportCSV}
-            activeOpacity={0.8}
-          >
-            <ThemedText style={styles.exportButtonWebText}>Exportar CSV</ThemedText>
-          </TouchableOpacity>
-        )}
-        <Button
-          title="+ Añadir Renovación"
-          onPress={() => router.push('/renewal/new')}
-        />
-      </View>
+      ) : (
+        <>
+          {mainContent}
+          <View style={styles.fabContainer}>
+            {isWeb && (
+              <TouchableOpacity
+                style={styles.exportButtonWeb}
+                onPress={handleExportCSV}
+                activeOpacity={0.8}
+              >
+                <ThemedText style={styles.exportButtonWebText}>Exportar CSV</ThemedText>
+              </TouchableOpacity>
+            )}
+            <Button
+              title="+ Añadir Renovación"
+              onPress={() => router.push('/renewal/new')}
+            />
+          </View>
+        </>
+      )}
     </SafeAreaView>
   );
 }
@@ -346,8 +418,58 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   webContainer: {
-    backgroundColor: '#05060f',
+    backgroundColor: AIRBNB.canvas,
+  },
+  splitLayout: {
+    flex: 1,
+    flexDirection: 'row',
+  },
+  leftPanel: {
+    flex: 1.4,
+    paddingRight: 24,
+    borderRightWidth: 1,
+    borderRightColor: AIRBNB.mist,
+  },
+  sidePanel: {
+    flex: 0.6,
+    backgroundColor: AIRBNB.card,
+  },
+  sidePanelContent: {
+    padding: 24,
+  },
+  sidePanelTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: AIRBNB.carbon,
+    marginBottom: 20,
+  },
+  primaryActionButton: {
+    backgroundColor: AIRBNB.coral,
+    borderRadius: 8,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
     alignItems: 'center',
+    marginBottom: 12,
+  },
+  primaryActionButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  secondaryActionButton: {
+    backgroundColor: AIRBNB.canvas,
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: AIRBNB.mist,
+  },
+  secondaryActionButtonText: {
+    color: AIRBNB.carbon,
+    fontSize: 14,
+    fontWeight: '500',
   },
   centerContainer: {
     flex: 1,
@@ -355,23 +477,28 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   webScrollContent: {
-    maxWidth: 720,
+    maxWidth: 900,
     width: '100%',
     paddingHorizontal: 24,
     paddingBottom: 24,
   },
   webHeader: {
-    marginTop: 48,
-    marginBottom: 32,
+    marginTop: 32,
+    marginBottom: 24,
     alignItems: 'center',
   },
   webTitle: {
     textAlign: 'center',
     marginBottom: 8,
+    color: AIRBNB.carbon,
+    fontSize: 32,
+    fontWeight: '600',
+    letterSpacing: -0.02,
   },
   webSubtitle: {
     textAlign: 'center',
-    color: '#9da7ba',
+    color: AIRBNB.slate,
+    fontSize: 16,
   },
   settingsContainer: {
     paddingHorizontal: isWeb ? 0 : 16,
@@ -397,18 +524,15 @@ const styles = StyleSheet.create({
     minWidth: 100,
   },
   webKpiCard: {
-    backgroundColor: 'rgba(186, 214, 247, 0.03)',
-    borderColor: 'rgba(186, 215, 247, 0.12)',
+    backgroundColor: AIRBNB.card,
+    borderColor: AIRBNB.mist,
     borderWidth: 1,
-    borderRadius: 12,
+    borderRadius: 14,
     padding: 16,
-    ...(isWeb ? {
-      boxShadow: 'rgba(199, 211, 234, 0.12) 0px 1px 1px 0px inset, rgba(199, 211, 234, 0.05) 0px 24px 48px 0px inset, rgba(6, 6, 14, 0.7) 0px 24px 32px 0px',
-    } : {}),
   },
   kpiLabel: {
     fontSize: 12,
-    color: isWeb ? '#9da7ba' : '#007AFF',
+    color: isWeb ? AIRBNB.slate : '#007AFF',
     marginBottom: 4,
   },
   kpiValue: {
@@ -419,7 +543,7 @@ const styles = StyleSheet.create({
   webKpiValue: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#d8ecf8',
+    color: AIRBNB.carbon,
   },
   timelineContainer: {
     paddingHorizontal: 16,
@@ -429,10 +553,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 0,
     marginTop: 8,
     marginBottom: 8,
-    backgroundColor: '#0d0f1a',
-    borderRadius: 12,
+    backgroundColor: AIRBNB.card,
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: 'rgba(186, 215, 247, 0.08)',
+    borderColor: AIRBNB.mist,
     padding: 16,
   },
   sectionTitle: {
@@ -440,10 +564,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textTransform: 'uppercase',
     marginBottom: 10,
-    color: isWeb ? '#9da7ba' : '#8E8E93',
+    color: isWeb ? AIRBNB.slate : '#8E8E93',
   },
   webSectionTitle: {
-    color: '#9da7ba',
+    color: AIRBNB.slate,
   },
   timelineScroll: {
     gap: 12,
@@ -456,27 +580,27 @@ const styles = StyleSheet.create({
     minWidth: 160,
   },
   webTimelineItem: {
-    backgroundColor: 'rgba(186, 214, 247, 0.03)',
+    backgroundColor: AIRBNB.canvas,
     borderWidth: 1,
-    borderColor: 'rgba(186, 215, 247, 0.12)',
+    borderColor: AIRBNB.mist,
   },
   timelineMonth: {
     fontSize: 13,
     fontWeight: '600',
-    color: isWeb ? '#b6d9fc' : '#000000',
+    color: isWeb ? AIRBNB.carbon : '#000000',
     marginBottom: 4,
     fontFamily: isWeb ? 'monospace' : undefined,
   },
   webTimelineMonth: {
-    color: '#b6d9fc',
+    color: AIRBNB.carbon,
     fontFamily: 'monospace',
   },
   timelineNames: {
     fontSize: 13,
-    color: isWeb ? '#9da7ba' : '#666666',
+    color: isWeb ? AIRBNB.slate : '#666666',
   },
   webTimelineNames: {
-    color: '#9da7ba',
+    color: AIRBNB.slate,
   },
   savingsContainer: {
     paddingHorizontal: 16,
@@ -486,10 +610,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 0,
     marginTop: 8,
     marginBottom: 8,
-    backgroundColor: '#0d0f1a',
-    borderRadius: 12,
+    backgroundColor: AIRBNB.card,
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: 'rgba(186, 215, 247, 0.08)',
+    borderColor: AIRBNB.mist,
     padding: 16,
   },
   savingRow: {
@@ -498,14 +622,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: isWeb ? 'rgba(186, 215, 247, 0.08)' : '#E5E5EA',
+    borderBottomColor: isWeb ? AIRBNB.mist : '#E5E5EA',
   },
   webSavingRow: {
-    borderBottomColor: 'rgba(186, 215, 247, 0.08)',
+    borderBottomColor: AIRBNB.mist,
   },
   savingName: {
     fontSize: 14,
-    color: isWeb ? '#d8ecf8' : '#000000',
+    color: isWeb ? AIRBNB.carbon : '#000000',
   },
   savingAmount: {
     fontSize: 14,
@@ -530,31 +654,31 @@ const styles = StyleSheet.create({
     backgroundColor: '#E5E5EA',
   },
   filterChipWeb: {
-    backgroundColor: 'rgba(186, 214, 247, 0.06)',
+    backgroundColor: AIRBNB.canvas,
     borderWidth: 1,
-    borderColor: 'rgba(186, 215, 247, 0.12)',
+    borderColor: AIRBNB.mist,
   },
   filterChipActive: {
     backgroundColor: '#007AFF15',
   },
   filterChipActiveWeb: {
-    backgroundColor: 'rgba(102, 58, 243, 0.15)',
+    backgroundColor: AIRBNB.carbon,
     borderWidth: 1,
-    borderColor: 'rgba(102, 58, 243, 0.3)',
+    borderColor: AIRBNB.carbon,
   },
   filterChipText: {
     fontSize: 13,
     color: '#3C3C43',
   },
   filterChipTextWeb: {
-    color: '#9da7ba',
+    color: AIRBNB.carbon,
   },
   filterChipTextActive: {
     color: '#007AFF',
     fontWeight: '500',
   },
   filterChipTextActiveWeb: {
-    color: '#b6d9fc',
+    color: '#FFFFFF',
     fontWeight: '500',
   },
   emptyList: {
@@ -565,10 +689,10 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
   },
   exportButtonWeb: {
-    backgroundColor: '#663af3',
+    backgroundColor: AIRBNB.carbon,
     paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 9999,
+    borderRadius: 8,
     alignSelf: 'flex-start',
     marginBottom: 8,
   },

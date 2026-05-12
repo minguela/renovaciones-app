@@ -11,16 +11,27 @@ import {
 } from 'react-native';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { useThemeColor } from '@/hooks/use-theme-color';
 import { supabase, type Profile } from '@/lib/supabase';
 
 const isWeb = Platform.OS === 'web';
 
+const AIRBNB = {
+  canvas: '#f7f7f7',
+  card: '#ffffff',
+  carbon: '#222222',
+  slate: '#6a6a6a',
+  mist: '#ebebeb',
+  coral: '#ff385c',
+  coralDeep: '#e00b41',
+};
+
 const NOTIFICATION_METHODS = [
   { value: 'none', label: 'Desactivadas', icon: 'bell.slash' },
+  { value: 'email', label: 'Email', icon: 'envelope.fill' },
+  { value: 'sms', label: 'SMS', icon: 'message.fill' },
   { value: 'whatsapp', label: 'WhatsApp', icon: 'phone.fill' },
   { value: 'telegram', label: 'Telegram', icon: 'paperplane.fill' },
-  { value: 'email', label: 'Email', icon: 'envelope.fill' },
+  { value: 'push', label: 'Push', icon: 'bell.fill' },
 ];
 
 export function NotificationSettings() {
@@ -32,10 +43,9 @@ export function NotificationSettings() {
   const [method, setMethod] = useState<string>('none');
   const [whatsappNumber, setWhatsappNumber] = useState('');
   const [telegramChatId, setTelegramChatId] = useState('');
+  const [smsNumber, setSmsNumber] = useState('');
+  const [emailAddress, setEmailAddress] = useState('');
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
-
-  const textColor = useThemeColor({ light: '#000000', dark: '#FFFFFF' }, 'text');
-  const secondaryTextColor = isWeb ? '#9da7ba' : useThemeColor({ light: '#666666', dark: '#999999' }, 'text');
 
   useEffect(() => {
     loadProfile();
@@ -57,6 +67,8 @@ export function NotificationSettings() {
         setMethod(data.notification_method || 'none');
         setWhatsappNumber(data.whatsapp_number || '');
         setTelegramChatId(data.telegram_chat_id || '');
+        setSmsNumber(data.sms_number || '');
+        setEmailAddress(data.email_address || user.email || '');
         setNotificationsEnabled(data.notifications_enabled);
       }
     } catch (error) {
@@ -79,6 +91,8 @@ export function NotificationSettings() {
         notification_method: method,
         whatsapp_number: whatsappNumber || null,
         telegram_chat_id: telegramChatId || null,
+        sms_number: smsNumber || null,
+        email_address: emailAddress || null,
         notifications_enabled: notificationsEnabled,
         updated_at: new Date().toISOString(),
       };
@@ -131,79 +145,143 @@ export function NotificationSettings() {
     );
   }
 
+  const pillUnselectedBg = isWeb ? AIRBNB.canvas : '#F2F2F7';
+  const pillSelectedBg = isWeb ? AIRBNB.carbon : '#007AFF';
+  const pillSelectedText = '#FFFFFF';
+  const pillUnselectedText = isWeb ? AIRBNB.carbon : '#3C3C43';
+  const pillUnselectedBorder = isWeb ? AIRBNB.mist : 'transparent';
+
   return (
-    <Card variant={isWeb ? 'glass' : 'default'}>
-      <Text style={[styles.title, { color: textColor }]}>Notificaciones</Text>
+    <Card variant="default">
+      <Text style={[styles.title, { color: isWeb ? AIRBNB.carbon : '#000000' }]}>Notificaciones</Text>
 
       <View style={styles.section}>
-        <Text style={[styles.label, { color: secondaryTextColor }]}>Método de notificación</Text>
+        <Text style={[styles.label, { color: isWeb ? AIRBNB.slate : '#666666' }]}>Método de notificación</Text>
         <View style={styles.methodsContainer}>
-          {NOTIFICATION_METHODS.map((item) => (
-            <TouchableOpacity
-              key={item.value}
-              style={[
-                styles.methodButton,
-                method === item.value && (isWeb ? styles.methodButtonActiveWeb : styles.methodButtonActive),
-              ]}
-              onPress={() => setMethod(item.value)}
-            >
-              <Text
+          {NOTIFICATION_METHODS.map((item) => {
+            const selected = method === item.value;
+            return (
+              <TouchableOpacity
+                key={item.value}
                 style={[
-                  styles.methodText,
-                  method === item.value && (isWeb ? styles.methodTextActiveWeb : styles.methodTextActive),
+                  styles.methodButton,
+                  {
+                    backgroundColor: selected ? pillSelectedBg : pillUnselectedBg,
+                    borderColor: selected ? AIRBNB.carbon : pillUnselectedBorder,
+                    borderWidth: 1,
+                  },
                 ]}
+                onPress={() => setMethod(item.value)}
               >
-                {item.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
+                <Text
+                  style={[
+                    styles.methodText,
+                    { color: selected ? pillSelectedText : pillUnselectedText, fontWeight: selected ? '600' : '400' },
+                  ]}
+                >
+                  {item.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
         </View>
       </View>
 
       {method !== 'none' && (
         <>
           <View style={styles.section}>
-            <Text style={[styles.label, { color: secondaryTextColor }]}>
-              Activar notificaciones
-            </Text>
-            <TouchableOpacity
-              style={[
-                styles.toggle,
-                notificationsEnabled && (isWeb ? styles.toggleActiveWeb : styles.toggleActive),
-              ]}
-              onPress={() => setNotificationsEnabled(!notificationsEnabled)}
-            >
-              <View
+            <View style={styles.rowBetween}>
+              <Text style={[styles.label, { color: isWeb ? AIRBNB.carbon : '#3C3C43' }]}>
+                Activar notificaciones
+              </Text>
+              <TouchableOpacity
                 style={[
-                  styles.toggleKnob,
-                  notificationsEnabled && styles.toggleKnobActive,
+                  styles.toggle,
+                  notificationsEnabled && { backgroundColor: '#34C759' },
                 ]}
-              />
-            </TouchableOpacity>
+                onPress={() => setNotificationsEnabled(!notificationsEnabled)}
+              >
+                <View
+                  style={[
+                    styles.toggleKnob,
+                    notificationsEnabled && styles.toggleKnobActive,
+                  ]}
+                />
+              </TouchableOpacity>
+            </View>
           </View>
+
+          {method === 'email' && (
+            <View style={styles.section}>
+              <Text style={[styles.label, { color: isWeb ? AIRBNB.slate : '#666666' }]}>
+                Dirección de email
+              </Text>
+              <TextInput
+                style={[
+                  styles.input,
+                  {
+                    backgroundColor: isWeb ? AIRBNB.card : '#F2F2F7',
+                    color: isWeb ? AIRBNB.carbon : '#000000',
+                    borderColor: isWeb ? AIRBNB.mist : 'transparent',
+                    borderWidth: isWeb ? 1 : 0,
+                  },
+                ]}
+                placeholder="tu@email.com"
+                placeholderTextColor={isWeb ? AIRBNB.slate : '#8E8E93'}
+                value={emailAddress}
+                onChangeText={setEmailAddress}
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
+            </View>
+          )}
+
+          {method === 'sms' && (
+            <View style={styles.section}>
+              <Text style={[styles.label, { color: isWeb ? AIRBNB.slate : '#666666' }]}>
+                Número de teléfono (con código de país)
+              </Text>
+              <TextInput
+                style={[
+                  styles.input,
+                  {
+                    backgroundColor: isWeb ? AIRBNB.card : '#F2F2F7',
+                    color: isWeb ? AIRBNB.carbon : '#000000',
+                    borderColor: isWeb ? AIRBNB.mist : 'transparent',
+                    borderWidth: isWeb ? 1 : 0,
+                  },
+                ]}
+                placeholder="Ej: +346****5678"
+                placeholderTextColor={isWeb ? AIRBNB.slate : '#8E8E93'}
+                value={smsNumber}
+                onChangeText={setSmsNumber}
+                keyboardType="phone-pad"
+              />
+            </View>
+          )}
 
           {method === 'whatsapp' && (
             <View style={styles.section}>
-              <Text style={[styles.label, { color: secondaryTextColor }]}>
+              <Text style={[styles.label, { color: isWeb ? AIRBNB.slate : '#666666' }]}>
                 Número de WhatsApp (con código de país)
               </Text>
               <TextInput
                 style={[
                   styles.input,
                   {
-                    backgroundColor: isWeb ? 'rgba(199, 211, 234, 0.06)' : '#F2F2F7',
-                    color: textColor,
-                    borderColor: isWeb ? 'rgba(186, 215, 247, 0.12)' : 'transparent',
+                    backgroundColor: isWeb ? AIRBNB.card : '#F2F2F7',
+                    color: isWeb ? AIRBNB.carbon : '#000000',
+                    borderColor: isWeb ? AIRBNB.mist : 'transparent',
                     borderWidth: isWeb ? 1 : 0,
                   },
                 ]}
                 placeholder="Ej: +346****5678"
-                placeholderTextColor={isWeb ? '#9da7ba' : '#8E8E93'}
+                placeholderTextColor={isWeb ? AIRBNB.slate : '#8E8E93'}
                 value={whatsappNumber}
                 onChangeText={setWhatsappNumber}
                 keyboardType="phone-pad"
               />
-              <Text style={[styles.helpText, { color: isWeb ? '#81899b' : '#8E8E93' }]}>
+              <Text style={[styles.helpText, { color: isWeb ? AIRBNB.slate : '#8E8E93' }]}>
                 Para WhatsApp gratis, obtén tu API key en callmebot.com
               </Text>
             </View>
@@ -211,25 +289,25 @@ export function NotificationSettings() {
 
           {method === 'telegram' && (
             <View style={styles.section}>
-              <Text style={[styles.label, { color: secondaryTextColor }]}>
+              <Text style={[styles.label, { color: isWeb ? AIRBNB.slate : '#666666' }]}>
                 Chat ID de Telegram
               </Text>
               <TextInput
                 style={[
                   styles.input,
                   {
-                    backgroundColor: isWeb ? 'rgba(199, 211, 234, 0.06)' : '#F2F2F7',
-                    color: textColor,
-                    borderColor: isWeb ? 'rgba(186, 215, 247, 0.12)' : 'transparent',
+                    backgroundColor: isWeb ? AIRBNB.card : '#F2F2F7',
+                    color: isWeb ? AIRBNB.carbon : '#000000',
+                    borderColor: isWeb ? AIRBNB.mist : 'transparent',
                     borderWidth: isWeb ? 1 : 0,
                   },
                 ]}
                 placeholder="Ej: 123456789"
-                placeholderTextColor={isWeb ? '#9da7ba' : '#8E8E93'}
+                placeholderTextColor={isWeb ? AIRBNB.slate : '#8E8E93'}
                 value={telegramChatId}
                 onChangeText={setTelegramChatId}
               />
-              <Text style={[styles.helpText, { color: isWeb ? '#81899b' : '#8E8E93' }]}>
+              <Text style={[styles.helpText, { color: isWeb ? AIRBNB.slate : '#8E8E93' }]}>
                 1. Crea un bot con @BotFather{'\n'}
                 2. Escribe al bot{'\n'}
                 3. Obtén tu chat ID desde getUpdates
@@ -259,11 +337,16 @@ export function NotificationSettings() {
 const styles = StyleSheet.create({
   title: {
     fontSize: 20,
-    fontWeight: '700',
+    fontWeight: '600',
     marginBottom: 20,
   },
   section: {
     marginBottom: 20,
+  },
+  rowBetween: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   label: {
     fontSize: 14,
@@ -278,43 +361,17 @@ const styles = StyleSheet.create({
   methodButton: {
     paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: isWeb ? 999 : 8,
-    backgroundColor: isWeb ? 'rgba(186, 214, 247, 0.06)' : '#F2F2F7',
-    borderColor: isWeb ? 'rgba(186, 215, 247, 0.12)' : 'transparent',
-    borderWidth: isWeb ? 1 : 0,
-  },
-  methodButtonActive: {
-    backgroundColor: '#007AFF',
-  },
-  methodButtonActiveWeb: {
-    backgroundColor: 'rgba(102, 58, 243, 0.2)',
-    borderColor: 'rgba(102, 58, 243, 0.5)',
-    borderWidth: 1,
+    borderRadius: 8,
   },
   methodText: {
     fontSize: 14,
-    color: isWeb ? '#d1e4fa' : '#3C3C43',
-  },
-  methodTextActive: {
-    color: '#FFFFFF',
-    fontWeight: '500',
-  },
-  methodTextActiveWeb: {
-    color: '#b6d9fc',
-    fontWeight: '500',
   },
   toggle: {
     width: 50,
     height: 30,
     borderRadius: 15,
-    backgroundColor: isWeb ? '#2C2C2E' : '#E5E5EA',
+    backgroundColor: isWeb ? '#dddddd' : '#E5E5EA',
     padding: 2,
-  },
-  toggleActive: {
-    backgroundColor: '#34C759',
-  },
-  toggleActiveWeb: {
-    backgroundColor: '#663af3',
   },
   toggleKnob: {
     width: 26,
@@ -333,7 +390,7 @@ const styles = StyleSheet.create({
   input: {
     paddingHorizontal: 12,
     paddingVertical: 12,
-    borderRadius: isWeb ? 4 : 8,
+    borderRadius: isWeb ? 14 : 8,
     fontSize: 16,
   },
   helpText: {

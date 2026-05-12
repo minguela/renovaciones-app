@@ -14,8 +14,10 @@ export interface Profile {
   email: string;
   whatsapp_number?: string;
   telegram_chat_id?: string;
+  sms_number?: string;
+  email_address?: string;
   notifications_enabled: boolean;
-  notification_method: 'whatsapp' | 'telegram' | 'email' | 'none';
+  notification_method: 'none' | 'email' | 'sms' | 'whatsapp' | 'telegram' | 'push';
   created_at: string;
   updated_at: string;
 }
@@ -76,29 +78,24 @@ export async function signInWithApple() {
 }
 
 export async function signInWithGoogle() {
-  const redirectTo = Platform.OS === 'web'
-    ? (typeof window !== 'undefined' ? window.location.origin : '')
-    : 'renovacionesapp://';
+  if (Platform.OS === 'web') {
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: typeof window !== 'undefined' ? window.location.origin : '' },
+    });
+    return { data, error };
+  }
 
+  // Native: use WebBrowser auth session
+  const redirectTo = 'renovacionesapp://';
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
-    options: { redirectTo, skipBrowserRedirect: Platform.OS !== 'web' },
+    options: { redirectTo, skipBrowserRedirect: true },
   });
 
   if (error) return { data, error };
 
-  if (Platform.OS === 'web' && data?.url) {
-    // Fallback: if Supabase didn't auto-redirect, do it manually
-    if (typeof window !== 'undefined' && window.location.href === data.url) {
-      return { data, error };
-    }
-    // If we're still here and have a URL, redirect manually
-    if (typeof window !== 'undefined' && data.url) {
-      window.location.href = data.url;
-    }
-  }
-
-  if (Platform.OS !== 'web' && data?.url) {
+  if (data?.url) {
     const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
     if (result.type === 'success' && 'url' in result) {
       await supabase.auth.getSession();
