@@ -314,15 +314,15 @@ export default function HomeScreen() {
           <ThemedText style={styles.secondaryActionButtonText}>Exportar CSV</ThemedText>
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.secondaryActionButton}
-          onPress={() => setShowSettings(!showSettings)}
-          activeOpacity={0.8}
-        >
-          <ThemedText style={styles.secondaryActionButtonText}>
-            {showSettings ? 'Ocultar ajustes' : 'Ajustes de notificación'}
-          </ThemedText>
-        </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.secondaryActionButton}
+            onPress={() => setShowSettings(!showSettings)}
+            activeOpacity={0.8}
+          >
+            <ThemedText style={styles.secondaryActionButtonText}>
+              {showSettings ? 'Ocultar datos de contacto' : 'Datos de contacto'}
+            </ThemedText>
+          </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.secondaryActionButton}
@@ -429,6 +429,7 @@ const styles = StyleSheet.create({
     paddingRight: 24,
     borderRightWidth: 1,
     borderRightColor: AIRBNB.mist,
+    alignItems: 'center',
   },
   sidePanel: {
     flex: 0.6,
@@ -481,6 +482,7 @@ const styles = StyleSheet.create({
     width: '100%',
     paddingHorizontal: 24,
     paddingBottom: 24,
+    alignSelf: 'center',
   },
   webHeader: {
     marginTop: 32,
