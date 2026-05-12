@@ -199,20 +199,6 @@ export function AuthScreen({
             size="lg"
           />
         </View>
-
-        <View style={styles.footer}>
-          <Text style={[styles.footerText, { color: isWeb ? AIRBNB.slate : '#666666' }]}>
-            {isLogin ? '¿No tienes cuenta?' : '¿Ya tienes cuenta?'}
-          </Text>
-          <TouchableOpacity onPress={() => {
-            setIsLogin(!isLogin);
-            setValidationError(null);
-          }}>
-            <Text style={[styles.footerLink, { color: isWeb ? AIRBNB.coral : '#007AFF' }]}>
-              {isLogin ? 'Regístrate' : 'Inicia sesión'}
-            </Text>
-          </TouchableOpacity>
-        </View>
       </View>
     </SafeAreaView>
   );
@@ -370,19 +356,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 12,
     fontSize: 16,
-  },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 24,
-    gap: 4,
-  },
-  footerText: {
-    fontSize: 14,
-  },
-  footerLink: {
-    fontSize: 14,
-    fontWeight: '600',
   },
 });
