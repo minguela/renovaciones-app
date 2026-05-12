@@ -9,18 +9,19 @@ test.describe('CRUD Renewals', () => {
 
     // Open catalog
     await page.locator('text=Elegir del catálogo').click();
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(600);
 
     // Select category and option
     await page.locator('text=Streaming y entretenimiento').click();
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(600);
     await page.locator('text=Netflix').first().click();
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(800);
 
-    // Verify fields
+    // Verify fields populated by catalog
     await expect(page.locator('input[placeholder="Ej: Seguro de coche"]').first()).toHaveValue('Netflix');
     await expect(page.locator('input[placeholder="Ej: Mapfre"]').first()).toHaveValue('Netflix');
     await expect(page.locator('input[placeholder="0.00"]').first()).toHaveValue('12.99');
+    await expect(page.locator('text=Mensual').first()).toBeVisible();
   });
 
   test('create a custom renewal manually', async ({ page }) => {
@@ -33,11 +34,11 @@ test.describe('CRUD Renewals', () => {
     await page.locator('input[placeholder="Ej: Mapfre"]').first().fill('Mapfre');
     await page.locator('input[placeholder="0.00"]').first().fill('450');
 
-    // Select type - use the specific Seguro button in the form
+    // Select type Seguro
     const seguroBtn = page.locator('div:has-text("Seguro")').filter({ hasNotText: 'suscripciones' }).filter({ hasNotText: 'Seguros' }).first();
     await seguroBtn.click();
 
-    // Select frequency
+    // Select frequency Anual
     await page.locator('text=Anual').first().click();
 
     // Verify fields

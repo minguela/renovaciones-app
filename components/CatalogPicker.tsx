@@ -84,12 +84,9 @@ export function CatalogPicker({
         color: option.defaultColor || category.color,
         currency: option.defaultCurrency || 'EUR',
       };
-      // Cierra primero para evitar glitches visuales
-      handleClose();
-      // Pequeño delay para asegurar que el modal se desmontó antes de actualizar el padre
-      setTimeout(() => onSelect(payload), isWeb ? 50 : 0);
+      onSelect(payload);
     },
-    [handleClose, onSelect]
+    [onSelect]
   );
 
   const handleBack = () => {
