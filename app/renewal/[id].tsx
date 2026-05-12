@@ -104,7 +104,8 @@ function WebDateInput({
 
 export default function RenewalFormScreen() {
   const router = useRouter();
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const params = useLocalSearchParams<{ id?: string }>();
+  const id = params.id ?? 'new';
   const isEditing = id !== 'new';
   const { user } = useAuth();
   const { addRenewal, updateRenewal, deleteRenewal, getRenewalById, getHistoryForRenewal } = useRenewals(user?.id);
@@ -331,18 +332,20 @@ export default function RenewalFormScreen() {
 
   return (
     <SafeAreaView style={[styles.container, isWeb && { backgroundColor: AIRBNB.canvas }]}>
-      <Stack.Screen
-        options={{
-          title: isEditing ? 'Editar Renovación' : 'Nueva Renovación',
-          headerLeft: () => (
-            <TouchableOpacity onPress={() => router.back()}>
-              <Text style={[styles.headerButton, { color: isWeb ? AIRBNB.carbon : '#007AFF', fontWeight: '600' }]}>
-                Cancelar
-              </Text>
-            </TouchableOpacity>
-          ),
-        }}
-      />
+      <Stack.Screen options={{ headerShown: false }} />
+
+      {/* Custom Header */}
+      <View style={[styles.customHeader, isWeb && styles.customHeaderWeb]}>
+        <View style={styles.customHeaderInner}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.customHeaderBtn} hitSlop={8}>
+            <Text style={styles.customHeaderBtnText}>Cancelar</Text>
+          </TouchableOpacity>
+          <Text style={styles.customHeaderTitle} numberOfLines={1}>
+            {isEditing ? 'Editar Renovación' : 'Nueva Renovación'}
+          </Text>
+          <View style={styles.customHeaderSpacer} />
+        </View>
+      </View>
 
       <ScrollView
         style={styles.scrollView}
@@ -952,6 +955,43 @@ const styles = StyleSheet.create({
   headerButton: {
     fontSize: 16,
   },
+  customHeader: {
+    paddingTop: 0,
+    backgroundColor: '#ffffff',
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#ebebeb',
+  },
+  customHeaderWeb: {
+    paddingTop: 16,
+  } as any,
+  customHeaderInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    height: 56,
+  },
+  customHeaderBtn: {
+    minWidth: 60,
+    alignItems: 'flex-start',
+  },
+  customHeaderBtnText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#222222',
+  },
+  customHeaderTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#222222',
+    letterSpacing: -0.2,
+    textAlign: 'center',
+    flex: 1,
+  },
+  customHeaderSpacer: {
+    minWidth: 60,
+  },
   scrollView: {
     flex: 1,
   },
@@ -963,7 +1003,13 @@ const styles = StyleSheet.create({
   },
   section: {
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 16,
+    marginHorizontal: isWeb ? 24 : 0,
+    marginVertical: isWeb ? 8 : 0,
+    backgroundColor: isWeb ? AIRBNB.card : 'transparent',
+    borderRadius: isWeb ? 20 : 0,
+    borderWidth: isWeb ? 1 : 0,
+    borderColor: isWeb ? AIRBNB.mist : 'transparent',
   },
   sectionTitle: {
     fontSize: 13,
