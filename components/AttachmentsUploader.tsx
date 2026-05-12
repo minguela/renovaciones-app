@@ -185,7 +185,7 @@ export function AttachmentsUploader({
             style={styles.fileInput}
             onChange={handleWebFileChange}
           />
-          <IconSymbol name="doc.badge.arrow.up" size={32} color="#b6d9fc" />
+          <IconSymbol name="doc.badge.arrow.up" size={32} color="#ff385c" />
           <Text style={styles.dropZoneText}>
             Arrastra archivos aquí o haz clic para seleccionar
           </Text>
@@ -206,7 +206,7 @@ export function AttachmentsUploader({
 
       {uploading && (
         <View style={styles.uploadingRow}>
-          <ActivityIndicator size="small" color={isWeb ? '#b6d9fc' : '#007AFF'} />
+          <ActivityIndicator size="small" color={isWeb ? '#ff385c' : '#007AFF'} />
           <Text style={[styles.uploadingText, isWeb && styles.uploadingTextWeb]}>
             Subiendo archivo...
           </Text>
@@ -234,7 +234,7 @@ export function AttachmentsUploader({
                     <IconSymbol
                       name={pdfFile ? 'doc.text' : 'doc'}
                       size={28}
-                      color={isWeb ? '#b6d9fc' : '#007AFF'}
+                      color={isWeb ? '#ff385c' : '#007AFF'}
                     />
                   </View>
                 )}
@@ -290,7 +290,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   } as any,
   dropZoneActive: {
-    borderColor: '#b6d9fc',
+    borderColor: '#ff385c',
     backgroundColor: 'rgba(102, 58, 243, 0.08)',
   } as any,
   fileInput: {
@@ -306,13 +306,13 @@ const styles = StyleSheet.create({
     zIndex: 2,
   } as any,
   dropZoneText: {
-    color: '#d1e4fa',
+    color: '#222222',
     fontSize: 14,
     fontWeight: '500',
     marginTop: 12,
   },
   dropZoneSubtext: {
-    color: '#9da7ba',
+    color: '#6a6a6a',
     fontSize: 12,
     marginTop: 4,
   },
@@ -346,7 +346,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   uploadingTextWeb: {
-    color: '#9da7ba',
+    color: '#6a6a6a',
   },
   list: {
     marginTop: 12,
@@ -401,7 +401,7 @@ const styles = StyleSheet.create({
     color: '#000000',
   },
   itemNameWeb: {
-    color: '#d1e4fa',
+    color: '#222222',
   },
   itemType: {
     fontSize: 12,
@@ -409,7 +409,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   itemTypeWeb: {
-    color: '#9da7ba',
+    color: '#6a6a6a',
   },
   deleteButton: {
     padding: 6,

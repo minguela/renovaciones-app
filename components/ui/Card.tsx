@@ -15,27 +15,22 @@ export function Card({ children, style, variant = 'default' }: CardProps) {
     { light: '#FFFFFF', dark: '#1C1C1E' },
     'background'
   );
+  const borderColor = isWeb ? '#ebebeb' : useThemeColor(
+    { light: '#E5E5EA', dark: '#38383A' },
+    'background'
+  );
 
   if (isWeb) {
-    const webBg =
-      variant === 'form'
-        ? 'rgba(5, 6, 15, 0.97)'
-        : variant === 'glass'
-        ? 'rgba(186, 214, 247, 0.03)'
-        : 'rgba(186, 214, 247, 0.03)';
-
     return (
       <View
         style={[
           styles.webCard,
           {
-            backgroundColor: webBg,
-            borderColor: 'rgba(186, 215, 247, 0.12)',
+            backgroundColor: '#ffffff',
+            borderColor: variant === 'form' ? '#ebebeb' : '#ebebeb',
             borderWidth: 1,
-            borderRadius: variant === 'form' ? 16 : 12,
+            borderRadius: 20,
           },
-          variant === 'glass' && styles.webGlass,
-          variant === 'form' && styles.webForm,
           style,
         ]}
       >
@@ -48,7 +43,7 @@ export function Card({ children, style, variant = 'default' }: CardProps) {
     <View
       style={[
         styles.card,
-        { backgroundColor, borderColor: useThemeColor({ light: '#E5E5EA', dark: '#38383A' }, 'border') },
+        { backgroundColor, borderColor },
         style,
       ]}
     >
@@ -76,10 +71,4 @@ const styles = StyleSheet.create({
     marginVertical: 8,
     overflow: 'hidden',
   },
-  webGlass: {
-    boxShadow: 'rgba(199, 211, 234, 0.12) 0px 1px 1px 0px inset, rgba(199, 211, 234, 0.05) 0px 24px 48px 0px inset, rgba(6, 6, 14, 0.7) 0px 24px 32px 0px',
-  } as any,
-  webForm: {
-    boxShadow: 'rgba(216, 236, 248, 0.2) 0px 1px 1px 0px inset, rgba(168, 216, 245, 0.06) 0px 24px 48px 0px inset, rgba(0, 0, 0, 0.3) 0px 16px 32px 0px',
-  } as any,
 });

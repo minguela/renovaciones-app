@@ -13,6 +13,7 @@ export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [authProcessing, setAuthProcessing] = useState(false);
   const [authMessage, setAuthMessage] = useState<string | null>(null);
   const [authError, setAuthError] = useState<string | null>(null);
 
@@ -98,42 +99,45 @@ export function useAuth() {
   }, []);
 
   const signInWithGoogle = useCallback(async () => {
+    if (authProcessing) return;
     setAuthError(null);
     setAuthMessage(null);
-    setLoading(true);
+    setAuthProcessing(true);
     try {
       const { error } = await sbSignInWithGoogle();
       if (error) {
         setAuthError(error.message);
-        setLoading(false);
       }
       // En web puede redirigir; en nativo continúa aquí
     } catch (err: any) {
       setAuthError(err?.message || 'Error al iniciar sesión con Google');
-      setLoading(false);
+    } finally {
+      setAuthProcessing(false);
     }
-  }, []);
+  }, [authProcessing]);
 
   const signInWithApple = useCallback(async () => {
+    if (authProcessing) return;
     setAuthError(null);
     setAuthMessage(null);
-    setLoading(true);
+    setAuthProcessing(true);
     try {
       const { error } = await sbSignInWithApple();
       if (error) {
         setAuthError(error.message);
-        setLoading(false);
       }
     } catch (err: any) {
       setAuthError(err?.message || 'Error al iniciar sesión con Apple');
-      setLoading(false);
+    } finally {
+      setAuthProcessing(false);
     }
-  }, []);
+  }, [authProcessing]);
 
   return {
     user,
     session,
     loading,
+    authProcessing,
     isAuthenticated: !!user,
     authMessage,
     authError,

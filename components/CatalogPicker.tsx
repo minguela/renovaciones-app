@@ -58,10 +58,10 @@ export function CatalogPicker({ visible, onClose, onSelect }: CatalogPickerProps
     setSelectedCategory(null);
   };
 
-  const accentColor = isWeb ? '#b6d9fc' : '#007AFF';
-  const textColor = isWeb ? '#d8ecf8' : '#000000';
-  const secondaryText = isWeb ? '#9da7ba' : '#8E8E93';
-  const headerBg = isWeb ? '#05060f' : '#F2F2F7';
+  const accentColor = isWeb ? '#ff385c' : '#007AFF';
+  const textColor = isWeb ? '#222222' : '#000000';
+  const secondaryText = isWeb ? '#6a6a6a' : '#8E8E93';
+  const headerBg = isWeb ? '#f7f7f7' : '#F2F2F7';
 
   return (
     <Modal
@@ -184,7 +184,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F2F2F7',
   },
   webContainer: {
-    backgroundColor: '#05060f',
+    backgroundColor: '#f7f7f7',
   },
   header: {
     paddingHorizontal: 16,

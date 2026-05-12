@@ -1,28 +1,28 @@
 import { Platform } from 'react-native';
 
 // ============================================================
-// WEB THEME — AuthKit Midnight Command Center (2026 aesthetic)
+// WEB THEME — Airbnb Clean (light aesthetic)
 // ============================================================
 export const WebColors = {
-  text: '#d8ecf8',               // Comet — primary body text
-  textSecondary: '#d1e4fa',      // Arctic Mist
-  textTertiary: '#9da7ba',       // Whisper Blue
-  textMuted: '#81899b',          // Interstellar Gray
-  background: '#05060f',         // Midnight Abyss
-  backgroundElevated: '#0a0b14', // Slightly lighter
-  backgroundCard: 'rgba(186, 214, 247, 0.03)',
-  tint: '#663af3',               // Neon Violet — primary action
-  tintHover: '#7c52f8',
-  border: 'rgba(186, 215, 247, 0.12)',
-  borderSubtle: 'rgba(186, 214, 247, 0.06)',
-  icon: '#d8ecf8',
-  iconSecondary: '#9da7ba',
+  text: '#222222',               // Carbon — primary body text
+  textSecondary: '#6a6a6a',      // Slate
+  textTertiary: '#9a9a9a',       // Light slate
+  textMuted: '#b0b0b0',          // Muted gray
+  background: '#f7f7f7',         // Canvas
+  backgroundElevated: '#ffffff', // Card
+  backgroundCard: '#ffffff',
+  tint: '#ff385c',               // Coral — primary action
+  tintHover: '#e00b41',
+  border: '#ebebeb',
+  borderSubtle: '#f7f7f7',
+  icon: '#222222',
+  iconSecondary: '#6a6a6a',
   success: '#34C759',
   warning: '#FF9500',
   danger: '#FF3B30',
-  accent: '#b6d9fc',             // Celestial Light
-  glow: 'rgba(186, 207, 247, 0.32)',
-  glowMd: 'rgba(238, 186, 247, 0.24)',
+  accent: '#ff385c',             // Coral
+  glow: 'rgba(255, 56, 92, 0.15)',
+  glowMd: 'rgba(255, 56, 92, 0.10)',
 } as const;
 
 // ============================================================
@@ -138,13 +138,13 @@ export const Radius = {
 // ============================================================
 export const Shadows = {
   web: {
-    sm: 'rgba(186, 207, 247, 0.32) 0px 0px 6px 0px',
-    md: 'rgba(238, 186, 247, 0.24) 0px 0px 12px 0px',
-    subtle: 'rgba(186, 215, 247, 0.12) 0px 0px 0px 1px inset',
-    subtle2: 'rgba(199, 211, 234, 0.12) -0.5px 0.5px 1px 0px inset, rgba(186, 215, 247, 0.08) 0px 0px 96px 0px inset',
-    subtle3: 'rgba(186, 214, 247, 0.06) 0px 0px 0px 1px inset',
-    card: 'rgba(199, 211, 234, 0.12) 0px 1px 1px 0px inset, rgba(199, 211, 234, 0.05) 0px 24px 48px 0px inset, rgba(6, 6, 14, 0.7) 0px 24px 32px 0px',
-    form: 'rgba(216, 236, 248, 0.2) 0px 1px 1px 0px inset, rgba(168, 216, 245, 0.06) 0px 24px 48px 0px inset, rgba(0, 0, 0, 0.3) 0px 16px 32px 0px',
+    sm: 'rgba(0, 0, 0, 0.04) 0px 1px 2px 0px',
+    md: 'rgba(0, 0, 0, 0.06) 0px 2px 8px 0px',
+    subtle: 'rgba(0, 0, 0, 0.02) 0px 0px 0px 1px inset',
+    subtle2: 'rgba(0, 0, 0, 0.02) 0px 0px 0px 1px inset, rgba(0, 0, 0, 0.02) 0px 0px 48px 0px inset',
+    subtle3: 'rgba(0, 0, 0, 0.02) 0px 0px 0px 1px inset',
+    card: 'rgba(0, 0, 0, 0.02) 0px 0px 0px 1px, rgba(0, 0, 0, 0.04) 0px 2px 6px 0px, rgba(0, 0, 0, 0.1) 0px 4px 8px 0px',
+    form: 'rgba(0, 0, 0, 0.02) 0px 0px 0px 1px, rgba(0, 0, 0, 0.04) 0px 2px 6px 0px, rgba(0, 0, 0, 0.1) 0px 4px 8px 0px',
   },
   mobile: {
     sm: { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 2 },

@@ -24,8 +24,8 @@ export default function RootLayout() {
   // Initialize global auth listener
   useAuth();
 
-  // On web, force dark theme
-  const activeTheme = isWeb ? DarkTheme : (colorScheme === 'dark' ? DarkTheme : DefaultTheme);
+  // On web, use the system color scheme instead of forcing dark
+  const activeTheme = colorScheme === 'dark' ? DarkTheme : DefaultTheme;
 
   // Restore session on mount
   useEffect(() => {
@@ -85,7 +85,7 @@ export default function RootLayout() {
             }} 
           />
         </Stack>
-        <StatusBar style={isWeb ? 'light' : 'auto'} />
+        <StatusBar style="auto" />
       </ThemeProvider>
       <ToastContainer />
     </ToastProvider>

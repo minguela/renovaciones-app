@@ -1,7 +1,8 @@
 export type RenewalType = 'insurance' | 'subscription' | 'license' | 'other';
 export type RenewalFrequency = 'monthly' | 'quarterly' | 'biannual' | 'annual' | 'one-time';
 export type RenewalStatus = 'active' | 'pending_cancellation' | 'cancelled' | 'renewed';
-export type PaymentMethod = 'visa' | 'mastercard' | 'paypal' | 'revolut' | 'apple_pay' | 'bank_transfer' | 'cash';
+export type PaymentMethod = 'visa' | 'mastercard' | 'paypal' | 'revolut' | 'apple_pay' | 'direct_debit';
+export type NotificationMethod = 'email' | 'sms' | 'whatsapp' | 'telegram' | 'push';
 
 export interface RenewalHistory {
   id: string;
@@ -37,6 +38,7 @@ export interface Renewal {
   contractEndDate?: string;
   yearlyCost?: number;
   attachments?: string[];
+  notificationMethod?: NotificationMethod;
 }
 
 export interface RenewalFormData {
@@ -59,6 +61,7 @@ export interface RenewalFormData {
   autoRenew?: boolean;
   contractEndDate?: Date;
   attachments?: string[];
+  notificationMethod?: NotificationMethod;
 }
 
 export const RENEWAL_TYPES: { value: RenewalType; label: string; icon: string }[] = [
@@ -95,8 +98,14 @@ export const PAYMENT_METHODS: { value: PaymentMethod; label: string; icon: strin
   { value: 'paypal', label: 'PayPal', icon: 'doc.text.fill' },
   { value: 'revolut', label: 'Revolut', icon: 'creditcard.fill' },
   { value: 'apple_pay', label: 'Apple Pay', icon: 'apple.logo' },
-  { value: 'bank_transfer', label: 'Transferencia', icon: 'building.columns.fill' },
-  { value: 'cash', label: 'Efectivo', icon: 'banknote.fill' },
+  { value: 'direct_debit', label: 'Domiciliación bancaria', icon: 'building.columns.fill' },
+];
+export const NOTIFICATION_METHODS: { value: NotificationMethod; label: string }[] = [
+  { value: 'email', label: 'Email' },
+  { value: 'sms', label: 'SMS' },
+  { value: 'whatsapp', label: 'WhatsApp' },
+  { value: 'telegram', label: 'Telegram' },
+  { value: 'push', label: 'Push' },
 ];
 
 export const TAG_OPTIONS: { value: string; label: string }[] = [
