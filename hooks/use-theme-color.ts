@@ -16,7 +16,8 @@ export function useThemeColor(
       tint: WebColors.tint,
       icon: WebColors.icon,
     };
-    const colorFromProps = props.dark ?? props.light;
+    // Web theme is light (Airbnb Clean), prefer light prop then fall back to web system colors
+    const colorFromProps = props.light ?? props.dark;
     return colorFromProps ?? webColors[colorName] ?? WebColors.text;
   }
 
