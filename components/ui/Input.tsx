@@ -32,7 +32,9 @@ export function Input({
   const backgroundColor = isWeb
     ? '#ffffff'
     : useThemeColor({ light: '#F2F2F7', dark: '#2C2C2E' }, 'background');
-  const textColor = useThemeColor({ light: '#000000', dark: '#FFFFFF' }, 'text');
+  const textColor = isWeb
+    ? '#222222'
+    : useThemeColor({ light: '#000000', dark: '#FFFFFF' }, 'text');
   const placeholderColor = isWeb ? '#6a6a6a' : useThemeColor({ light: '#8E8E93', dark: '#8E8E93' }, 'text');
 
   return (
