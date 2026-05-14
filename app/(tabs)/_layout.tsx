@@ -19,16 +19,8 @@ export default function TabLayout() {
         tabBarInactiveTintColor: isWeb ? '#6a6a6a' : Colors[colorScheme ?? 'light'].icon,
         headerShown: false,
         tabBarButton: HapticTab,
-        tabBarStyle: isWeb
-          ? {
-              backgroundColor: '#ffffff',
-              borderTopColor: '#ebebeb',
-              borderTopWidth: 1,
-              height: 64,
-              paddingBottom: 8,
-            }
-          : undefined,
-      }}>
+        tabBarStyle: { display: 'none' },
+      }}
       <Tabs.Screen
         name="index"
         options={{
