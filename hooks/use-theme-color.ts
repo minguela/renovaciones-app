@@ -6,7 +6,9 @@ export function useThemeColor(
   props: { light?: string; dark?: string },
   colorName: keyof typeof Colors.light & keyof typeof Colors.dark
 ) {
-  const theme = useColorScheme() ?? 'light';
+  const colorScheme = useColorScheme() ?? 'light';
+  // On web, force light theme to prevent dark mode from inverting input colors
+  const theme = Platform.OS === 'web' ? 'light' : colorScheme;
 
   // On web, respect the system color scheme but default to light
   if (Platform.OS === 'web') {
