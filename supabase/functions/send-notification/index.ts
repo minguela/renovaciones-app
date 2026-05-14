@@ -16,6 +16,17 @@ interface Payload {
   renewal: Renewal
 }
 
+/* ---------- Theme tokens (sync with theme.css / constants/theme.ts) ---------- */
+const EMAIL_THEME = {
+  carbon: '#222222',
+  slate: '#6a6a6a',
+  stone: '#b0b0b0',
+  mist: '#ebebeb',
+  fog: '#f7f7f7',
+  cloud: '#ffffff',
+  coral: '#ff385c',
+} as const
+
 /* ---------- Templates ---------- */
 function buildEmail(renewal: Renewal) {
   const { service_name, amount, currency, due_date, category, days_remaining, url } = renewal
@@ -23,27 +34,28 @@ function buildEmail(renewal: Renewal) {
     ? `Tu suscripción a ${service_name} vence hoy`
     : `Tu suscripción a ${service_name} vence en ${days_remaining} días`
 
+  const t = EMAIL_THEME
   const html = `
-    <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;max-width:480px;margin:0 auto;color:#222">
-      <div style="background:#fff;border-radius:12px;padding:32px;border:1px solid #ebebeb">
+    <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;max-width:480px;margin:0 auto;color:${t.carbon}">
+      <div style="background:${t.cloud};border-radius:12px;padding:32px;border:1px solid ${t.mist}">
         <h2 style="margin-top:0;font-size:20px;font-weight:600">${subject}</h2>
-        <p style="color:#717171;font-size:15px;line-height:1.5">
+        <p style="color:${t.slate};font-size:15px;line-height:1.5">
           Hola,<br><br>
           Te recordamos que tu suscripción a <strong>${service_name}</strong> (${category})
-          ${days_remaining <= 0 ? 'vence <strong style="color:#ff385c">hoy</strong>' : `vence en <strong>${days_remaining} días</strong>`}.
+          ${days_remaining <= 0 ? `vence <strong style="color:${t.coral}">hoy</strong>` : `vence en <strong>${days_remaining} días</strong>`}.
         </p>
-        <div style="background:#f7f7f7;border-radius:8px;padding:16px;margin:20px 0">
+        <div style="background:${t.fog};border-radius:8px;padding:16px;margin:20px 0">
           <div style="display:flex;justify-content:space-between;margin-bottom:8px">
-            <span style="color:#717171">Importe</span>
+            <span style="color:${t.slate}">Importe</span>
             <strong>${amount.toFixed(2)} ${currency}</strong>
           </div>
           <div style="display:flex;justify-content:space-between">
-            <span style="color:#717171">Fecha de cargo</span>
+            <span style="color:${t.slate}">Fecha de cargo</span>
             <strong>${due_date}</strong>
           </div>
         </div>
-        ${url ? `<a href="${url}" style="display:inline-block;background:#222;color:#fff;text-decoration:none;padding:12px 24px;border-radius:8px;font-weight:500;margin-top:8px">Gestionar renovación</a>` : ''}
-        <p style="color:#b0b0b0;font-size:12px;margin-top:24px">Recibes este mensaje porque tienes activadas las notificaciones en RenovacionesApp.</p>
+        ${url ? `<a href="${url}" style="display:inline-block;background:${t.carbon};color:${t.cloud};text-decoration:none;padding:12px 24px;border-radius:8px;font-weight:500;margin-top:8px">Gestionar renovación</a>` : ''}
+        <p style="color:${t.stone};font-size:12px;margin-top:24px">Recibes este mensaje porque tienes activadas las notificaciones en RenovacionesApp.</p>
       </div>
     </div>`
 
