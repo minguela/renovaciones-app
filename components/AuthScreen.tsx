@@ -112,7 +112,7 @@ export function AuthScreen({
               <ActivityIndicator color="#FFFFFF" />
             ) : (
               <>
-                <IconSymbol name="apple.logo" size={20} color="#FFFFFF" style={styles.oauthIcon} />
+                <FontAwesome name="apple" size={20} color="#FFFFFF" style={styles.oauthIcon} />
                 <Text style={[styles.oauthText, styles.appleText]}>Continuar con Apple</Text>
               </>
             )}
