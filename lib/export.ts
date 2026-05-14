@@ -55,9 +55,14 @@ function translateType(type: string): string {
 
 function translatePaymentMethod(method?: string): string {
   const map: Record<string, string> = {
+    card: 'Tarjeta',
+    direct_debit: 'Domiciliación bancaria',
+    paypal: 'PayPal',
+    bizum: 'Bizum',
+    other: 'Otro',
+    // legacy values for backward compatibility
     visa: 'Visa',
     mastercard: 'Mastercard',
-    paypal: 'PayPal',
     revolut: 'Revolut',
     apple_pay: 'Apple Pay',
     bank_transfer: 'Transferencia',

@@ -1,7 +1,7 @@
 export type RenewalType = string;
 export type RenewalFrequency = 'monthly' | 'quarterly' | 'biannual' | 'annual' | 'one-time';
 export type RenewalStatus = 'active' | 'pending_cancellation' | 'cancelled' | 'renewed';
-export type PaymentMethod = 'visa' | 'mastercard' | 'paypal' | 'revolut' | 'apple_pay' | 'direct_debit' | 'bizum' | 'other';
+export type PaymentMethod = 'card' | 'direct_debit' | 'paypal' | 'bizum' | 'other';
 export type NotificationMethod = 'email' | 'sms' | 'whatsapp' | 'telegram' | 'push';
 
 export interface RenewalHistory {
@@ -92,12 +92,11 @@ export const STATUS_OPTIONS: { value: RenewalStatus; label: string; color: strin
 ];
 
 export const PAYMENT_METHODS: { value: PaymentMethod; label: string; icon: string }[] = [
-  { value: 'visa', label: 'Visa', icon: 'creditcard.fill' },
-  { value: 'mastercard', label: 'Mastercard', icon: 'creditcard.fill' },
-  { value: 'paypal', label: 'PayPal', icon: 'doc.text.fill' },
-  { value: 'revolut', label: 'Revolut', icon: 'creditcard.fill' },
-  { value: 'apple_pay', label: 'Apple Pay', icon: 'apple.logo' },
+  { value: 'card', label: 'Tarjeta', icon: 'creditcard.fill' },
   { value: 'direct_debit', label: 'Domiciliación bancaria', icon: 'building.columns.fill' },
+  { value: 'paypal', label: 'PayPal', icon: 'doc.text.fill' },
+  { value: 'bizum', label: 'Bizum', icon: 'creditcard.fill' },
+  { value: 'other', label: 'Otro', icon: 'creditcard.fill' },
 ];
 export const NOTIFICATION_METHODS: { value: NotificationMethod; label: string }[] = [
   { value: 'email', label: 'Email' },
