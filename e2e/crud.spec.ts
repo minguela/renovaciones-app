@@ -1,8 +1,59 @@
 import { test, expect } from '@playwright/test';
-import { injectMockSession } from './helpers/auth';
+import { injectMockSession, isValidUUIDv4 } from './helpers/auth';
 
 test.describe('CRUD Renewals', () => {
-  test('create a new renewal from catalog', async ({ page }) => {
+  test('create renewal generates valid UUID v4', async ({ page }) => {
+    await injectMockSession(page);
+
+    // Intercept Supabase insert call
+    let capturedBody: any = null;
+    await page.route('**/rest/v1/renewals*', async (route, request) => {
+      if (request.method() === 'POST') {
+        capturedBody = request.postDataJSON();
+        // Mock success response
+        await route.fulfill({
+          status: 201,
+          contentType: 'application/json',
+          body: JSON.stringify(capturedBody),
+        });
+      } else {
+        await route.continue();
+      }
+    });
+
+    await page.goto('/renewal/new');
+    await page.waitForTimeout(1500);
+
+    // Fill basic fields
+    await page.locator('input[placeholder="Ej: Seguro de coche"]').first().fill('Suscripción E2E');
+    await page.locator('input[placeholder="Ej: Mapfre"]').first().fill('Proveedor E2E');
+    await page.locator('input[placeholder="0.00"]').first().fill('99.99');
+
+    // Submit form
+    await page.getByText('Crear renovación').click();
+
+    // Wait for interception
+    await page.waitForTimeout(2000);
+
+    // Assert request was captured
+    expect(capturedBody).toBeTruthy();
+
+    // Supabase insert sends an array or object depending on version
+    const payload = Array.isArray(capturedBody) ? capturedBody[0] : capturedBody;
+    expect(payload).toBeTruthy();
+    expect(payload.id).toBeTruthy();
+
+    // Critical assertion: ID must be a valid UUID v4
+    expect(isValidUUIDv4(payload.id)).toBe(true);
+
+    // Verify other required fields
+    expect(payload.name).toBe('Suscripción E2E');
+    expect(payload.provider).toBe('Proveedor E2E');
+    expect(payload.cost).toBe(99.99);
+    expect(payload.user_id).toBe('e2e-test-user-id');
+  });
+
+  test('catalog picker populates form fields', async ({ page }) => {
     await injectMockSession(page);
     await page.goto('/renewal/new');
     await page.waitForTimeout(1500);
@@ -22,26 +73,5 @@ test.describe('CRUD Renewals', () => {
     await expect(page.locator('input[placeholder="Ej: Mapfre"]').first()).toHaveValue('Netflix');
     await expect(page.locator('input[placeholder="0.00"]').first()).toHaveValue('12.99');
     await expect(page.locator('text=Mensual').first()).toBeVisible();
-  });
-
-  test('create a custom renewal manually', async ({ page }) => {
-    await injectMockSession(page);
-    await page.goto('/renewal/new');
-    await page.waitForTimeout(1500);
-
-    // Fill form manually
-    await page.locator('input[placeholder="Ej: Seguro de coche"]').first().fill('Seguro de coche');
-    await page.locator('input[placeholder="Ej: Mapfre"]').first().fill('Mapfre');
-    await page.locator('input[placeholder="0.00"]').first().fill('450');
-
-    // Select type Seguro
-    const seguroBtn = page.locator('div:has-text("Seguro")').filter({ hasNotText: 'suscripciones' }).filter({ hasNotText: 'Seguros' }).first();
-    await seguroBtn.click();
-
-    // Select frequency Anual
-    await page.locator('text=Anual').first().click();
-
-    // Verify fields
-    await expect(page.locator('input[placeholder="Ej: Seguro de coche"]').first()).toHaveValue('Seguro de coche');
   });
 });
