@@ -5,6 +5,7 @@ import 'react-native-reanimated';
 import { Platform } from 'react-native';
 import { useEffect } from 'react';
 import * as Linking from 'expo-linking';
+import '@/theme.css';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { FontLoader } from '@/components/FontLoader';
@@ -24,8 +25,8 @@ export default function RootLayout() {
   // Initialize global auth listener
   useAuth();
 
-  // On web, use the system color scheme instead of forcing dark
-  const activeTheme = colorScheme === 'dark' ? DarkTheme : DefaultTheme;
+  // On web, always use light theme to match Airbnb design; native respects system
+  const activeTheme = isWeb ? DefaultTheme : (colorScheme === 'dark' ? DarkTheme : DefaultTheme);
 
   // Restore session on mount
   useEffect(() => {

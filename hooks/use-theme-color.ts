@@ -8,7 +8,7 @@ export function useThemeColor(
 ) {
   const theme = useColorScheme() ?? 'light';
 
-  // On web, always use dark theme colors from the new system
+  // On web, respect the system color scheme but default to light
   if (Platform.OS === 'web') {
     const webColors: Record<string, string> = {
       text: WebColors.text,
@@ -16,7 +16,7 @@ export function useThemeColor(
       tint: WebColors.tint,
       icon: WebColors.icon,
     };
-    const colorFromProps = props.dark ?? props.light;
+    const colorFromProps = props[theme];
     return colorFromProps ?? webColors[colorName] ?? WebColors.text;
   }
 
