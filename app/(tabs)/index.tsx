@@ -14,7 +14,7 @@ import { NotificationSettings } from '@/components/NotificationSettings';
 import { useRenewals } from '@/hooks/useRenewals';
 import { useAuth } from '@/hooks/useAuth';
 import { useThemeColor } from '@/hooks/use-theme-color';
-import { calculateYearlyCost, calculateMonthlyCost, groupByMonth } from '@/lib/calculations';
+import { calculateYearlyCost, calculateMonthlyCost } from '@/lib/calculations';
 import { getDaysUntilRenewal, type Renewal, STATUS_OPTIONS } from '@/types/renewal';
 import { exportRenewalsToCSV, exportToCSVFile } from '@/lib/export';
 import { AIRBNB } from '@/constants/airbnb-colors';
@@ -96,11 +96,6 @@ export default function HomeScreen() {
     };
   }, [renewals]);
 
-  const timeline = useMemo(() => {
-    const activeRenewals = renewals.filter((r) => (r.status || 'active') !== 'cancelled');
-    return groupByMonth(activeRenewals);
-  }, [renewals]);
-
   const savings = useMemo(() => {
     return renewals
       .filter((r) => r.status === 'pending_cancellation' || r.status === 'cancelled')
@@ -157,76 +152,20 @@ export default function HomeScreen() {
         </View>
       )}
 
-      {renewals.length > 0 && (
-        <>
-          <View style={[styles.kpiContainer, isWeb && styles.webKpiContainer]}>
-            <View style={[styles.kpiCard, isWeb && styles.webKpiCard]}>
-              <ThemedText style={styles.kpiLabel}>Gasto mensual</ThemedText>
-              <ThemedText style={[styles.kpiValue, isWeb && styles.webKpiValue]}>
-                €{kpiData.totalMonthly.toFixed(2)}
+      {renewals.length > 0 && savings.length > 0 && (
+        <View style={[styles.savingsContainer, isWeb && styles.webSavingsContainer]}>
+          <ThemedText style={[styles.sectionTitle, isWeb && styles.webSectionTitle]}>
+            Posibles ahorros
+          </ThemedText>
+          {savings.map((item) => (
+            <View key={item.id} style={[styles.savingRow, isWeb && styles.webSavingRow]}>
+              <ThemedText style={styles.savingName}>{item.name}</ThemedText>
+              <ThemedText style={[styles.savingAmount, isWeb && styles.webSavingAmount]}>
+                -€{item.yearlySaving.toFixed(2)}/año
               </ThemedText>
             </View>
-            <View style={[styles.kpiCard, isWeb && styles.webKpiCard]}>
-              <ThemedText style={styles.kpiLabel}>Gasto anual</ThemedText>
-              <ThemedText style={[styles.kpiValue, isWeb && styles.webKpiValue]}>
-                €{kpiData.totalYearly.toFixed(2)}
-              </ThemedText>
-            </View>
-            <View style={[styles.kpiCard, isWeb && styles.webKpiCard]}>
-              <ThemedText style={styles.kpiLabel}>Próximas 30d</ThemedText>
-              <ThemedText style={[styles.kpiValue, isWeb && styles.webKpiValue]}>
-                {kpiData.upcoming30}
-              </ThemedText>
-            </View>
-            <View style={[styles.kpiCard, isWeb && styles.webKpiCard]}>
-              <ThemedText style={styles.kpiLabel}>Categoría más cara</ThemedText>
-              <ThemedText style={[styles.kpiValue, isWeb && styles.webKpiValue]}>
-                {kpiData.mostExpensiveCategory
-                  ? kpiData.mostExpensiveCategory[0].charAt(0).toUpperCase() +
-                    kpiData.mostExpensiveCategory[0].slice(1)
-                  : '-'}
-              </ThemedText>
-            </View>
-          </View>
-
-          <View style={[styles.timelineContainer, isWeb && styles.webTimelineContainer]}>
-            <ThemedText style={[styles.sectionTitle, isWeb && styles.webSectionTitle]}>
-              Timeline de renovaciones
-            </ThemedText>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.timelineScroll}
-            >
-              {Object.entries(timeline).map(([month, items]) => (
-                <View key={month} style={[styles.timelineItem, isWeb && styles.webTimelineItem]}>
-                  <ThemedText style={[styles.timelineMonth, isWeb && styles.webTimelineMonth]}>
-                    {month}
-                  </ThemedText>
-                  <ThemedText style={[styles.timelineNames, isWeb && styles.webTimelineNames]}>
-                    {items.map((i) => i.name).join(', ')}
-                  </ThemedText>
-                </View>
-              ))}
-            </ScrollView>
-          </View>
-
-          {savings.length > 0 && (
-            <View style={[styles.savingsContainer, isWeb && styles.webSavingsContainer]}>
-              <ThemedText style={[styles.sectionTitle, isWeb && styles.webSectionTitle]}>
-                Posibles ahorros
-              </ThemedText>
-              {savings.map((item) => (
-                <View key={item.id} style={[styles.savingRow, isWeb && styles.webSavingRow]}>
-                  <ThemedText style={styles.savingName}>{item.name}</ThemedText>
-                  <ThemedText style={[styles.savingAmount, isWeb && styles.webSavingAmount]}>
-                    -€{item.yearlySaving.toFixed(2)}/año
-                  </ThemedText>
-                </View>
-              ))}
-            </View>
-          )}
-        </>
+          ))}
+        </View>
       )}
 
       <RenewalFilters
@@ -238,7 +177,25 @@ export default function HomeScreen() {
       <FlatList
         data={filteredRenewals}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => <RenewalCard renewal={item} />}
+        renderItem={({ item }) => (
+          <RenewalCard
+            renewal={item}
+            onDelete={(renewal) => {
+              Alert.alert(
+                'Eliminar renovación',
+                `¿Eliminar "${renewal.name}"?`,
+                [
+                  { text: 'Cancelar', style: 'cancel' },
+                  {
+                    text: 'Eliminar',
+                    style: 'destructive',
+                    onPress: () => deleteRenewal(renewal.id),
+                  },
+                ]
+              );
+            }}
+          />
+        )}
         contentContainerStyle={filteredRenewals.length === 0 && styles.emptyList}
         ListEmptyComponent={<EmptyState />}
         refreshControl={
@@ -300,6 +257,35 @@ export default function HomeScreen() {
     </View>
   ) : null;
 
+  const kpiBar = renewals.length > 0 ? (
+    <View style={[styles.kpiBar, isWeb && styles.webKpiBar]}>
+      <View style={styles.kpiBarItem}>
+        <ThemedText style={styles.kpiBarLabel}>Mensual</ThemedText>
+        <ThemedText style={styles.kpiBarValue}>€{kpiData.totalMonthly.toFixed(0)}</ThemedText>
+      </View>
+      <View style={styles.kpiBarDivider} />
+      <View style={styles.kpiBarItem}>
+        <ThemedText style={styles.kpiBarLabel}>Anual</ThemedText>
+        <ThemedText style={styles.kpiBarValue}>€{kpiData.totalYearly.toFixed(0)}</ThemedText>
+      </View>
+      <View style={styles.kpiBarDivider} />
+      <View style={styles.kpiBarItem}>
+        <ThemedText style={styles.kpiBarLabel}>30d</ThemedText>
+        <ThemedText style={styles.kpiBarValue}>{kpiData.upcoming30}</ThemedText>
+      </View>
+      <View style={styles.kpiBarDivider} />
+      <View style={[styles.kpiBarItem, { flex: 1.5 }]}>
+        <ThemedText style={styles.kpiBarLabel}>Top</ThemedText>
+        <ThemedText style={styles.kpiBarValue} numberOfLines={1}>
+          {kpiData.mostExpensiveCategory
+            ? kpiData.mostExpensiveCategory[0].charAt(0).toUpperCase() +
+              kpiData.mostExpensiveCategory[0].slice(1)
+            : '-'}
+        </ThemedText>
+      </View>
+    </View>
+  ) : null;
+
   return (
     <SafeAreaView style={[styles.container, isWeb && styles.webContainer]}>
       <Stack.Screen
@@ -343,12 +329,18 @@ export default function HomeScreen() {
 
       {isLargeScreen ? (
         <View style={styles.splitLayout}>
-          <View style={styles.leftPanel}>{mainContent}</View>
+          <View style={styles.leftPanel}>
+            {mainContent}
+            {kpiBar}
+          </View>
           {sidePanel}
         </View>
       ) : (
         <>
-          {mainContent}
+          <View style={{ flex: 1 }}>
+            {mainContent}
+            {kpiBar}
+          </View>
           <View style={styles.fabContainer}>
             {isWeb && (
               <TouchableOpacity
@@ -460,64 +452,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     lineHeight: 22,
   },
-  kpiContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    gap: 12,
-  },
-  webKpiContainer: {
-    paddingTop: 24,
-    paddingHorizontal: 24,
-    maxWidth: 900,
-    alignSelf: 'center',
-    width: '100%',
-  },
-  kpiCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
-    minWidth: '45%',
-    flex: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  webKpiCard: {
-    backgroundColor: AIRBNB.card,
-    borderWidth: 1,
-    borderColor: AIRBNB.mist,
-    boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
-  } as any,
-  kpiLabel: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: '#8E8E93',
-    marginBottom: 4,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  kpiValue: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#000000',
-  },
-  webKpiValue: {
-    color: AIRBNB.carbon,
-  },
-  timelineContainer: {
-    marginTop: 24,
-    paddingHorizontal: 16,
-  },
-  webTimelineContainer: {
-    paddingHorizontal: 24,
-    maxWidth: 900,
-    alignSelf: 'center',
-    width: '100%',
-  },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
@@ -526,44 +460,6 @@ const styles = StyleSheet.create({
   },
   webSectionTitle: {
     color: AIRBNB.carbon,
-  },
-  timelineScroll: {
-    gap: 12,
-    paddingRight: 16,
-  },
-  timelineItem: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 14,
-    minWidth: 160,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  webTimelineItem: {
-    backgroundColor: AIRBNB.card,
-    borderWidth: 1,
-    borderColor: AIRBNB.mist,
-    boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
-  } as any,
-  timelineMonth: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 6,
-    color: '#000000',
-  },
-  webTimelineMonth: {
-    color: AIRBNB.carbon,
-  },
-  timelineNames: {
-    fontSize: 13,
-    color: AIRBNB.slate,
-    lineHeight: 18,
-  },
-  webTimelineNames: {
-    color: AIRBNB.slate,
   },
   savingsContainer: {
     marginTop: 24,
@@ -598,6 +494,46 @@ const styles = StyleSheet.create({
   },
   webSavingAmount: {
     color: AIRBNB.coral,
+  },
+  kpiBar: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderTopWidth: 1,
+    borderTopColor: '#E5E5EA',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    paddingBottom: 28,
+    zIndex: 10,
+  },
+  webKpiBar: {
+    backgroundColor: AIRBNB.card,
+    borderTopColor: AIRBNB.mist,
+    paddingBottom: 16,
+  },
+  kpiBarItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  kpiBarLabel: {
+    fontSize: 10,
+    fontWeight: '500',
+    color: '#8E8E93',
+    marginBottom: 2,
+  },
+  kpiBarValue: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#000000',
+  },
+  kpiBarDivider: {
+    width: 1,
+    height: 24,
+    backgroundColor: '#E5E5EA',
   },
   fabContainer: {
     position: 'absolute',

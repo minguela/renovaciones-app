@@ -12,9 +12,10 @@ const isWeb = Platform.OS === 'web';
 interface RenewalCardProps {
   renewal: Renewal;
   onPress?: (renewal: Renewal) => void;
+  onDelete?: (renewal: Renewal) => void;
 }
 
-export function RenewalCard({ renewal, onPress }: RenewalCardProps) {
+export function RenewalCard({ renewal, onPress, onDelete }: RenewalCardProps) {
   const router = useRouter();
   const daysUntil = getDaysUntilRenewal(renewal.renewalDate);
   const status = getRenewalStatus(daysUntil);
@@ -85,6 +86,19 @@ export function RenewalCard({ renewal, onPress }: RenewalCardProps) {
             </Text>
           </View>
         </View>
+
+        {onDelete && (
+          <TouchableOpacity
+            style={styles.deleteBtn}
+            onPress={(e) => {
+              e.stopPropagation();
+              onDelete(renewal);
+            }}
+            hitSlop={8}
+          >
+            <IconSymbol name="trash" size={18} color={isWeb ? AIRBNB.coral : '#FF3B30'} />
+          </TouchableOpacity>
+        )}
       </Card>
     </TouchableOpacity>
   );
@@ -151,5 +165,12 @@ const styles = StyleSheet.create({
   statusText: {
     fontSize: 11,
     fontWeight: '500',
+  },
+  deleteBtn: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    padding: 4,
+    zIndex: 2,
   },
 });
