@@ -30,11 +30,12 @@ export function Input({
   style,
   error,
 }: InputProps) {
-  const backgroundColor = isWeb
-    ? AIRBNB.card
-    : useThemeColor({ light: '#F2F2F7', dark: '#2C2C2E' }, 'background');
-  const textColor = useThemeColor({ light: '#000000', dark: '#FFFFFF' }, 'text');
-  const placeholderColor = isWeb ? AIRBNB.slate : useThemeColor({ light: '#8E8E93', dark: '#8E8E93' }, 'text');
+  const themeBackgroundColor = useThemeColor({ light: '#F2F2F7', dark: '#2C2C2E' }, 'background');
+  const backgroundColor = isWeb ? AIRBNB.card : themeBackgroundColor;
+  const themeTextColor = useThemeColor({ light: '#000000', dark: '#FFFFFF' }, 'text');
+  const textColor = isWeb ? AIRBNB.carbon : themeTextColor;
+  const themePlaceholderColor = useThemeColor({ light: '#8E8E93', dark: '#8E8E93' }, 'text');
+  const placeholderColor = isWeb ? AIRBNB.slate : themePlaceholderColor;
 
   return (
     <View style={style}>

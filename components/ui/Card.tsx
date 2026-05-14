@@ -16,10 +16,11 @@ export function Card({ children, style, variant = 'default' }: CardProps) {
     { light: '#FFFFFF', dark: '#1C1C1E' },
     'background'
   );
-  const borderColor = isWeb ? AIRBNB.mist : useThemeColor(
+  const themeBorderColor = useThemeColor(
     { light: '#E5E5EA', dark: '#38383A' },
     'background'
   );
+  const borderColor = isWeb ? AIRBNB.mist : themeBorderColor;
 
   if (isWeb) {
     return (

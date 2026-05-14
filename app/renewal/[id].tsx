@@ -110,9 +110,8 @@ export default function RenewalFormScreen() {
   const [historyLoading, setHistoryLoading] = useState(false);
   const [previousRenewal, setPreviousRenewal] = useState<Renewal | null>(null);
 
-  const backgroundColor = isWeb
-    ? AIRBNB.canvas
-    : useThemeColor({ light: '#F2F2F7', dark: '#2C2C2E' }, 'background');
+  const themeBackgroundColor = useThemeColor({ light: '#F2F2F7', dark: '#2C2C2E' }, 'background');
+  const backgroundColor = isWeb ? AIRBNB.canvas : themeBackgroundColor;
   const textColor = useThemeColor({ light: '#000000', dark: '#FFFFFF' }, 'text');
 
   const [formData, setFormData] = useState<RenewalFormData>({
