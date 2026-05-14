@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { StyleSheet, FlatList, View, ActivityIndicator, RefreshControl, ScrollView, Platform, TouchableOpacity, useWindowDimensions } from 'react-native';
+import { StyleSheet, FlatList, View, ActivityIndicator, RefreshControl, ScrollView, Platform, TouchableOpacity, useWindowDimensions, Text, Alert } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -9,6 +9,7 @@ import { RenewalCard } from '@/components/RenewalCard';
 import { EmptyState } from '@/components/EmptyState';
 import { RenewalFilters, DEFAULT_FILTERS, applyFilters, type FilterState } from '@/components/RenewalFilters';
 import { Button } from '@/components/ui/Button';
+import { IconSymbol } from '@/components/ui/icon-symbol';
 import { AuthScreen } from '@/components/AuthScreen';
 import { NotificationSettings } from '@/components/NotificationSettings';
 import { useRenewals } from '@/hooks/useRenewals';
@@ -42,6 +43,7 @@ export default function HomeScreen() {
   const { renewals, loading, error, refresh } = useRenewals(user?.id);
   const [showSettings, setShowSettings] = useState(false);
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
+  const [summaryExpanded, setSummaryExpanded] = useState(false);
   const tintColor = useThemeColor({ light: '#007AFF', dark: '#0A84FF' }, 'tint');
 
   const handleSignOut = async () => {
@@ -138,7 +140,7 @@ export default function HomeScreen() {
   const mainContent = (
     <ScrollView
       showsVerticalScrollIndicator={false}
-      contentContainerStyle={isWeb ? styles.webScrollContent : undefined}
+      contentContainerStyle={isWeb ? [styles.webScrollContent, { paddingBottom: 140 }] : { paddingBottom: 140 }}
       style={{ flex: 1 }}
     >
       {isWeb && (
@@ -180,6 +182,7 @@ export default function HomeScreen() {
         renderItem={({ item }) => (
           <RenewalCard
             renewal={item}
+            onEdit={(renewal) => router.push(`/renewal/${renewal.id}`)}
             onDelete={(renewal) => {
               Alert.alert(
                 'Eliminar renovación',
@@ -257,33 +260,55 @@ export default function HomeScreen() {
     </View>
   ) : null;
 
-  const kpiBar = renewals.length > 0 ? (
-    <View style={[styles.kpiBar, isWeb && styles.webKpiBar]}>
-      <View style={styles.kpiBarItem}>
-        <ThemedText style={styles.kpiBarLabel}>Mensual</ThemedText>
-        <ThemedText style={styles.kpiBarValue}>€{kpiData.totalMonthly.toFixed(0)}</ThemedText>
-      </View>
-      <View style={styles.kpiBarDivider} />
-      <View style={styles.kpiBarItem}>
-        <ThemedText style={styles.kpiBarLabel}>Anual</ThemedText>
-        <ThemedText style={styles.kpiBarValue}>€{kpiData.totalYearly.toFixed(0)}</ThemedText>
-      </View>
-      <View style={styles.kpiBarDivider} />
-      <View style={styles.kpiBarItem}>
-        <ThemedText style={styles.kpiBarLabel}>30d</ThemedText>
-        <ThemedText style={styles.kpiBarValue}>{kpiData.upcoming30}</ThemedText>
-      </View>
-      <View style={styles.kpiBarDivider} />
-      <View style={[styles.kpiBarItem, { flex: 1.5 }]}>
-        <ThemedText style={styles.kpiBarLabel}>Top</ThemedText>
-        <ThemedText style={styles.kpiBarValue} numberOfLines={1}>
-          {kpiData.mostExpensiveCategory
-            ? kpiData.mostExpensiveCategory[0].charAt(0).toUpperCase() +
-              kpiData.mostExpensiveCategory[0].slice(1)
-            : '-'}
-        </ThemedText>
-      </View>
-    </View>
+  const floatingSummary = renewals.length > 0 ? (
+    <TouchableOpacity
+      activeOpacity={0.9}
+      onPress={() => setSummaryExpanded(!summaryExpanded)}
+      style={[styles.floatingSummary, isWeb && styles.webFloatingSummary]}
+    >
+      {!summaryExpanded ? (
+        <View style={styles.summaryCollapsed}>
+          <IconSymbol name="creditcard.fill" size={16} color={AIRBNB.coral} />
+          <Text style={styles.summaryCollapsedText}>
+            <Text style={styles.summaryCollapsedCurrency}>€</Text>
+            {kpiData.totalMonthly.toFixed(0)}
+            <Text style={styles.summaryCollapsedUnit}>/mes</Text>
+          </Text>
+          <Text style={styles.summaryCollapsedHint}>{kpiData.upcoming30} próximas</Text>
+        </View>
+      ) : (
+        <View style={styles.summaryExpanded}>
+          <View style={styles.summaryRow}>
+            <View style={styles.summaryCell}>
+              <Text style={styles.summaryCellLabel}>Mensual</Text>
+              <Text style={styles.summaryCellValue}>€{kpiData.totalMonthly.toFixed(0)}</Text>
+            </View>
+            <View style={styles.summaryCellDivider} />
+            <View style={styles.summaryCell}>
+              <Text style={styles.summaryCellLabel}>Anual</Text>
+              <Text style={styles.summaryCellValue}>€{kpiData.totalYearly.toFixed(0)}</Text>
+            </View>
+          </View>
+          <View style={styles.summaryDivider} />
+          <View style={styles.summaryRow}>
+            <View style={styles.summaryCell}>
+              <Text style={styles.summaryCellLabel}>Próximas 30d</Text>
+              <Text style={styles.summaryCellValue}>{kpiData.upcoming30}</Text>
+            </View>
+            <View style={styles.summaryCellDivider} />
+            <View style={styles.summaryCell}>
+              <Text style={styles.summaryCellLabel}>Top categoría</Text>
+              <Text style={styles.summaryCellValue} numberOfLines={1}>
+                {kpiData.mostExpensiveCategory
+                  ? kpiData.mostExpensiveCategory[0].charAt(0).toUpperCase() +
+                    kpiData.mostExpensiveCategory[0].slice(1)
+                  : '-'}
+              </Text>
+            </View>
+          </View>
+        </View>
+      )}
+    </TouchableOpacity>
   ) : null;
 
   return (
@@ -331,7 +356,6 @@ export default function HomeScreen() {
         <View style={styles.splitLayout}>
           <View style={styles.leftPanel}>
             {mainContent}
-            {kpiBar}
           </View>
           {sidePanel}
         </View>
@@ -339,8 +363,8 @@ export default function HomeScreen() {
         <>
           <View style={{ flex: 1 }}>
             {mainContent}
-            {kpiBar}
           </View>
+          {floatingSummary}
           <View style={styles.fabContainer}>
             {isWeb && (
               <TouchableOpacity
@@ -495,45 +519,100 @@ const styles = StyleSheet.create({
   webSavingAmount: {
     color: AIRBNB.coral,
   },
-  kpiBar: {
+  floatingSummary: {
     position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
+    bottom: 88,
+    left: 16,
+    right: 16,
+    backgroundColor: 'rgba(255,255,255,0.95)',
+    borderRadius: 24,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    elevation: 8,
+    zIndex: 20,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.04)',
+  },
+  webFloatingSummary: {
+    backdropFilter: 'blur(20px)',
+    WebkitBackdropFilter: 'blur(20px)',
+    left: '50%',
+    right: 'auto',
+    transform: [{ translateX: '-50%' }],
+    minWidth: 240,
+    maxWidth: 400,
+    width: 'auto',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+  } as any,
+  summaryCollapsed: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderTopWidth: 1,
-    borderTopColor: '#E5E5EA',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    paddingBottom: 28,
-    zIndex: 10,
+    gap: 8,
   },
-  webKpiBar: {
-    backgroundColor: AIRBNB.card,
-    borderTopColor: AIRBNB.mist,
-    paddingBottom: 16,
+  summaryCollapsedText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#000000',
+    letterSpacing: -0.3,
   },
-  kpiBarItem: {
+  summaryCollapsedCurrency: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#8E8E93',
+  },
+  summaryCollapsedUnit: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#8E8E93',
+  },
+  summaryCollapsedHint: {
+    fontSize: 11,
+    fontWeight: '500',
+    color: '#8E8E93',
+    marginLeft: 4,
+  },
+  summaryExpanded: {
+    width: '100%',
+    paddingVertical: 4,
+  },
+  summaryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  summaryCell: {
     flex: 1,
     alignItems: 'center',
+    paddingVertical: 6,
   },
-  kpiBarLabel: {
+  summaryCellLabel: {
     fontSize: 10,
     fontWeight: '500',
     color: '#8E8E93',
     marginBottom: 2,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
-  kpiBarValue: {
-    fontSize: 14,
+  summaryCellValue: {
+    fontSize: 15,
     fontWeight: '700',
     color: '#000000',
   },
-  kpiBarDivider: {
+  summaryCellDivider: {
     width: 1,
-    height: 24,
+    height: 28,
     backgroundColor: '#E5E5EA',
+  },
+  summaryDivider: {
+    height: 1,
+    backgroundColor: '#E5E5EA',
+    marginVertical: 4,
   },
   fabContainer: {
     position: 'absolute',
