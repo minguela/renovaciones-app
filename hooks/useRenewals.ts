@@ -49,7 +49,6 @@ export function useRenewals(userId?: string | null) {
         tags: item.tags || [],
         autoRenew: item.auto_renew,
         contractEndDate: item.contract_end_date,
-        attachments: item.attachments || [],
       }));
 
       setRenewals(mappedRenewals);
@@ -92,7 +91,6 @@ export function useRenewals(userId?: string | null) {
           tags: renewal.tags,
           auto_renew: renewal.autoRenew,
           contract_end_date: renewal.contractEndDate,
-          attachments: renewal.attachments || [],
         }]);
 
       if (supabaseError) throw supabaseError;
@@ -149,7 +147,6 @@ export function useRenewals(userId?: string | null) {
           tags: renewal.tags,
           auto_renew: renewal.autoRenew,
           contract_end_date: renewal.contractEndDate,
-          attachments: renewal.attachments || [],
           updated_at: new Date().toISOString(),
         })
         .eq('id', renewal.id)

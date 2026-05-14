@@ -37,8 +37,7 @@ export interface Renewal {
   autoRenew?: boolean;
   contractEndDate?: string;
   yearlyCost?: number;
-  attachments?: string[];
-  notificationMethod?: NotificationMethod;
+  notificationMethods?: NotificationMethod[];
 }
 
 export interface RenewalFormData {
@@ -61,7 +60,7 @@ export interface RenewalFormData {
   autoRenew?: boolean;
   contractEndDate?: Date;
   attachments?: string[];
-  notificationMethod?: NotificationMethod;
+  notificationMethods?: NotificationMethod[];
 }
 
 export const RENEWAL_TYPES: { value: RenewalType; label: string; icon: string }[] = [

@@ -134,7 +134,7 @@ export default function RenewalFormScreen() {
     tags: [],
     contractEndDate: undefined,
     attachments: [],
-    notificationMethod: 'push',
+    notificationMethods: ['push'],
   });
 
   useEffect(() => {
@@ -174,8 +174,8 @@ export default function RenewalFormScreen() {
         bankAccount: renewal.bankAccount || '',
         tags: renewal.tags || [],
         contractEndDate: renewal.contractEndDate ? new Date(renewal.contractEndDate) : undefined,
-        attachments: renewal.attachments || [],
-        notificationMethod: renewal.notificationMethod || 'push',
+        attachments: [],
+        notificationMethods: renewal.notificationMethods || ['push'],
       });
       // Load history
       setHistoryLoading(true);
@@ -220,8 +220,7 @@ export default function RenewalFormScreen() {
       bankAccount: formData.bankAccount?.trim() || undefined,
       tags: formData.tags || [],
       contractEndDate: formData.contractEndDate?.toISOString(),
-      attachments: formData.attachments || [],
-      notificationMethod: formData.notificationMethod || 'push',
+      notificationMethods: formData.notificationMethods || ['push'],
     };
 
     const success = isEditing
@@ -603,10 +602,10 @@ export default function RenewalFormScreen() {
                 <Text style={[styles.label, labelStyle]}>antes</Text>
               </View>
 
-              <Text style={[styles.label, { marginTop: 16 }, labelStyle]}>Método de aviso</Text>
+              <Text style={[styles.label, { marginTop: 16 }, labelStyle]}>Métodos de aviso</Text>
               <View style={styles.optionsRow}>
                 {NOTIFICATION_METHODS.map((method) => {
-                  const selected = formData.notificationMethod === method.value;
+                  const selected = formData.notificationMethods?.includes(method.value) ?? false;
                   return (
                     <TouchableOpacity
                       key={method.value}
@@ -614,7 +613,13 @@ export default function RenewalFormScreen() {
                         styles.typeOption,
                         { backgroundColor: selected ? pillSelectedBg : pillUnselectedBg, borderColor: selected ? AIRBNB.carbon : pillUnselectedBorder, borderWidth: 1 },
                       ]}
-                      onPress={() => updateFormData('notificationMethod', method.value)}
+                      onPress={() => {
+                        const current = formData.notificationMethods || [];
+                        const updated = selected
+                          ? current.filter((m) => m !== method.value)
+                          : [...current, method.value];
+                        updateFormData('notificationMethods', updated);
+                      }}
                     >
                       <Text
                         style={[
