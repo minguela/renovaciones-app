@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
+import React, { useState, useRef, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Platform, Animated } from 'react-native';
 import { useRouter } from 'expo-router';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Card } from '@/components/ui/Card';
@@ -13,12 +13,23 @@ interface RenewalCardProps {
   renewal: Renewal;
   onPress?: (renewal: Renewal) => void;
   onDelete?: (renewal: Renewal) => void;
+  onEdit?: (renewal: Renewal) => void;
 }
 
-export function RenewalCard({ renewal, onPress, onDelete }: RenewalCardProps) {
+export function RenewalCard({ renewal, onPress, onDelete, onEdit }: RenewalCardProps) {
   const router = useRouter();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const fadeAnim = useRef(new Animated.Value(0)).current;
   const daysUntil = getDaysUntilRenewal(renewal.renewalDate);
   const status = getRenewalStatus(daysUntil);
+
+  useEffect(() => {
+    Animated.timing(fadeAnim, {
+      toValue: menuOpen ? 1 : 0,
+      duration: 150,
+      useNativeDriver: true,
+    }).start();
+  }, [menuOpen]);
 
   const getStatusColor = () => {
     switch (status) {
@@ -41,6 +52,10 @@ export function RenewalCard({ renewal, onPress, onDelete }: RenewalCardProps) {
   const textSecondary = isWeb ? AIRBNB.slate : '#666666';
 
   const handlePress = () => {
+    if (menuOpen) {
+      setMenuOpen(false);
+      return;
+    }
     if (onPress) {
       onPress(renewal);
     } else {
@@ -87,17 +102,65 @@ export function RenewalCard({ renewal, onPress, onDelete }: RenewalCardProps) {
           </View>
         </View>
 
-        {onDelete && (
-          <TouchableOpacity
-            style={styles.deleteBtn}
-            onPress={(e) => {
-              e.stopPropagation();
-              onDelete(renewal);
-            }}
-            hitSlop={8}
-          >
-            <IconSymbol name="trash" size={18} color={isWeb ? AIRBNB.coral : '#FF3B30'} />
-          </TouchableOpacity>
+        {/* Menu button */}
+        <TouchableOpacity
+          style={styles.menuBtn}
+          onPress={(e) => {
+            e.stopPropagation();
+            setMenuOpen(!menuOpen);
+          }}
+          hitSlop={8}
+        >
+          <IconSymbol
+            name="ellipsis"
+            size={20}
+            color={isWeb ? AIRBNB.slate : '#8E8E93'}
+          />
+        </TouchableOpacity>
+
+        {/* Inline action menu */}
+        {menuOpen && (
+          <Animated.View style={[styles.actionMenu, { opacity: fadeAnim }]}>
+            <TouchableOpacity
+              style={styles.actionItem}
+              onPress={(e) => {
+                e.stopPropagation();
+                setMenuOpen(false);
+                router.push(`/renewal/${renewal.id}`);
+              }}
+            >
+              <IconSymbol name="eye" size={14} color={AIRBNB.carbon} />
+              <Text style={styles.actionText}>Ver detalles</Text>
+            </TouchableOpacity>
+
+            {onEdit && (
+              <TouchableOpacity
+                style={styles.actionItem}
+                onPress={(e) => {
+                  e.stopPropagation();
+                  setMenuOpen(false);
+                  onEdit(renewal);
+                }}
+              >
+                <IconSymbol name="pencil" size={14} color={AIRBNB.carbon} />
+                <Text style={styles.actionText}>Editar</Text>
+              </TouchableOpacity>
+            )}
+
+            {onDelete && (
+              <TouchableOpacity
+                style={[styles.actionItem, styles.actionItemDanger]}
+                onPress={(e) => {
+                  e.stopPropagation();
+                  setMenuOpen(false);
+                  onDelete(renewal);
+                }}
+              >
+                <IconSymbol name="trash" size={14} color={AIRBNB.coral} />
+                <Text style={[styles.actionText, styles.actionTextDanger]}>Eliminar</Text>
+              </TouchableOpacity>
+            )}
+          </Animated.View>
         )}
       </Card>
     </TouchableOpacity>
@@ -166,11 +229,40 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '500',
   },
-  deleteBtn: {
+  menuBtn: {
     position: 'absolute',
     top: 8,
     right: 8,
     padding: 4,
     zIndex: 2,
+  },
+  actionMenu: {
+    marginTop: 12,
+    marginHorizontal: -4,
+    paddingTop: 8,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: '#E5E5EA',
+    flexDirection: 'row',
+    gap: 8,
+  },
+  actionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+    backgroundColor: '#F2F2F7',
+  },
+  actionItemDanger: {
+    backgroundColor: '#FFE5E5',
+  },
+  actionText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#000000',
+  },
+  actionTextDanger: {
+    color: '#FF3B30',
   },
 });
