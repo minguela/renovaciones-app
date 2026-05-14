@@ -32,6 +32,17 @@ export default function RootLayout() {
     supabase.auth.getSession();
   }, []);
 
+  // Normalize Vercel deployment URL to the canonical short URL on web
+  useEffect(() => {
+    if (isWeb && typeof window !== 'undefined') {
+      const origin = window.location.origin;
+      if (origin.includes('renovaciones-app-minguela9109')) {
+        const canonicalUrl = 'https://renovaciones-app.vercel.app' + window.location.pathname + window.location.search + window.location.hash;
+        window.history.replaceState(null, '', canonicalUrl);
+      }
+    }
+  }, [isWeb]);
+
   // Process URL hash on web for OAuth callbacks
   useEffect(() => {
     if (isWeb && typeof window !== 'undefined' && window.location.hash) {

@@ -8,6 +8,19 @@ const supabaseKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || process.env.SUP
 
 export const supabase = createClient(supabaseUrl, supabaseKey);
 
+// URL canonica de produccion; evita redirecciones a URLs largas de Vercel
+const PRODUCTION_URL = 'https://renovaciones-app.vercel.app/';
+
+function getWebRedirectUrl(): string {
+  if (typeof window === 'undefined') return '';
+  const origin = window.location.origin;
+  // Si estamos en el deploy largo de Vercel, usar la URL corta canonica
+  if (origin.includes('renovaciones-app-minguela9109')) {
+    return PRODUCTION_URL;
+  }
+  return origin;
+}
+
 // Database types
 export interface Profile {
   id: string;
@@ -53,7 +66,7 @@ export async function signInWithApple() {
   if (Platform.OS === 'web') {
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'apple',
-      options: { redirectTo: typeof window !== 'undefined' ? window.location.origin : '' },
+      options: { redirectTo: getWebRedirectUrl() },
     });
     return { data, error };
   }
@@ -81,7 +94,7 @@ export async function signInWithGoogle() {
   if (Platform.OS === 'web') {
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: typeof window !== 'undefined' ? window.location.origin : '' },
+      options: { redirectTo: getWebRedirectUrl() },
     });
     return { data, error };
   }
