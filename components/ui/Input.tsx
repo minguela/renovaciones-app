@@ -1,6 +1,7 @@
 import React from 'react';
 import { TextInput, StyleSheet, Text, View, ViewStyle, Platform } from 'react-native';
 import { useThemeColor } from '@/hooks/use-theme-color';
+import { AIRBNB } from '@/constants/airbnb-colors';
 
 interface InputProps {
   label?: string;
@@ -30,15 +31,15 @@ export function Input({
   error,
 }: InputProps) {
   const backgroundColor = isWeb
-    ? '#ffffff'
+    ? AIRBNB.card
     : useThemeColor({ light: '#F2F2F7', dark: '#2C2C2E' }, 'background');
   const textColor = useThemeColor({ light: '#000000', dark: '#FFFFFF' }, 'text');
-  const placeholderColor = isWeb ? '#6a6a6a' : useThemeColor({ light: '#8E8E93', dark: '#8E8E93' }, 'text');
+  const placeholderColor = isWeb ? AIRBNB.slate : useThemeColor({ light: '#8E8E93', dark: '#8E8E93' }, 'text');
 
   return (
     <View style={style}>
       {label && (
-        <Text style={[styles.label, { color: isWeb ? '#222222' : '#3C3C43' }]}>
+        <Text style={[styles.label, { color: isWeb ? AIRBNB.carbon : '#3C3C43' }]}>
           {label}
         </Text>
       )}
@@ -51,7 +52,7 @@ export function Input({
             borderColor: isWeb
               ? error
                 ? 'rgba(255, 69, 58, 0.5)'
-                : '#ebebeb'
+                : AIRBNB.mist
               : error
               ? '#FF3B30'
               : 'transparent',

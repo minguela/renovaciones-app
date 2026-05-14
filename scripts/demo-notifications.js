@@ -1,3 +1,13 @@
+const EMAIL_THEME = {
+  carbon: '#222222',
+  slate: '#6a6a6a',
+  stone: '#b0b0b0',
+  mist: '#ebebeb',
+  fog: '#f7f7f7',
+  cloud: '#ffffff',
+  coral: '#ff385c',
+};
+
 // Demo local: muestra como se verian los mensajes reales de renovacion
 // Sin enviar nada. Para probar el envio real, usa la Edge Function send-notification.
 
@@ -16,26 +26,26 @@ function buildEmail(r) {
     ? `Tu suscripcion a ${r.service_name} vence hoy`
     : `Tu suscripcion a ${r.service_name} vence en ${r.days_remaining} dias`
   const html = `
-    <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;max-width:480px;margin:0 auto;color:#222">
-      <div style="background:#fff;border-radius:12px;padding:32px;border:1px solid #ebebeb">
+    <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;max-width:480px;margin:0 auto;color:${EMAIL_THEME.carbon}">
+      <div style="background:${EMAIL_THEME.cloud};border-radius:12px;padding:32px;border:1px solid ${EMAIL_THEME.mist}">
         <h2 style="margin-top:0;font-size:20px;font-weight:600">${subject}</h2>
-        <p style="color:#717171;font-size:15px;line-height:1.5">
+        <p style="color:${EMAIL_THEME.slate};font-size:15px;line-height:1.5">
           Hola,<br><br>
           Te recordamos que tu suscripcion a <strong>${r.service_name}</strong> (${r.category})
-          ${r.days_remaining <= 0 ? 'vence <strong style="color:#ff385c">hoy</strong>' : `vence en <strong>${r.days_remaining} dias</strong>`}.
+          ${r.days_remaining <= 0 ? 'vence <strong style="color:${EMAIL_THEME.coral}">hoy</strong>' : `vence en <strong>${r.days_remaining} dias</strong>`}.
         </p>
-        <div style="background:#f7f7f7;border-radius:8px;padding:16px;margin:20px 0">
+        <div style="background:${EMAIL_THEME.fog};border-radius:8px;padding:16px;margin:20px 0">
           <div style="display:flex;justify-content:space-between;margin-bottom:8px">
-            <span style="color:#717171">Importe</span>
+            <span style="color:${EMAIL_THEME.slate}">Importe</span>
             <strong>${r.amount.toFixed(2)} ${r.currency}</strong>
           </div>
           <div style="display:flex;justify-content:space-between">
-            <span style="color:#717171">Fecha de cargo</span>
+            <span style="color:${EMAIL_THEME.slate}">Fecha de cargo</span>
             <strong>${r.due_date}</strong>
           </div>
         </div>
-        <a href="${r.url}" style="display:inline-block;background:#222;color:#fff;text-decoration:none;padding:12px 24px;border-radius:8px;font-weight:500;margin-top:8px">Gestionar renovacion</a>
-        <p style="color:#b0b0b0;font-size:12px;margin-top:24px">Recibes este mensaje porque tienes activadas las notificaciones en RenovacionesApp.</p>
+        <a href="${r.url}" style="display:inline-block;background:${EMAIL_THEME.carbon};color:${EMAIL_THEME.cloud};text-decoration:none;padding:12px 24px;border-radius:8px;font-weight:500;margin-top:8px">Gestionar renovacion</a>
+        <p style="color:${EMAIL_THEME.stone};font-size:12px;margin-top:24px">Recibes este mensaje porque tienes activadas las notificaciones en RenovacionesApp.</p>
       </div>
     </div>`
   const text = `${subject}\n\nHola,\n\nTe recordamos que tu suscripcion a ${r.service_name} (${r.category}) ${r.days_remaining <= 0 ? 'vence HOY' : `vence en ${r.days_remaining} dias`}.\n\nImporte: ${r.amount.toFixed(2)} ${r.currency}\nFecha de cargo: ${r.due_date}\n\nGestionar: ${r.url}\n\n---\nRenovacionesApp`

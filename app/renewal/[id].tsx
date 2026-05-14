@@ -13,7 +13,7 @@ import {
 import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import DateTimePicker from '@react-native-community/datetimepicker';
-
+import { AIRBNB } from '@/constants/airbnb-colors';
 import { ThemedView } from '@/components/themed-view';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
@@ -42,16 +42,6 @@ import {
 } from '@/types/renewal';
 
 const isWeb = Platform.OS === 'web';
-
-const AIRBNB = {
-  canvas: '#f7f7f7',
-  card: '#ffffff',
-  carbon: '#222222',
-  slate: '#6a6a6a',
-  mist: '#ebebeb',
-  coral: '#ff385c',
-  coralDeep: '#e00b41',
-};
 
 function WebDateInput({
   value,
@@ -961,9 +951,9 @@ const styles = StyleSheet.create({
   },
   customHeader: {
     paddingTop: 0,
-    backgroundColor: '#ffffff',
+    backgroundColor: AIRBNB.card,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#ebebeb',
+    borderBottomColor: AIRBNB.mist,
   },
   customHeaderWeb: {
     paddingTop: 16,
@@ -983,12 +973,12 @@ const styles = StyleSheet.create({
   customHeaderBtnText: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#222222',
+    color: AIRBNB.carbon,
   },
   customHeaderTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#222222',
+    color: AIRBNB.carbon,
     letterSpacing: -0.2,
     textAlign: 'center',
     flex: 1,

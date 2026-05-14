@@ -12,18 +12,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { Button } from '@/components/ui/Button';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { AIRBNB } from '@/constants/airbnb-colors';
 
 const isWeb = Platform.OS === 'web';
-
-const AIRBNB = {
-  canvas: '#f7f7f7',
-  card: '#ffffff',
-  carbon: '#222222',
-  slate: '#6a6a6a',
-  mist: '#ebebeb',
-  coral: '#ff385c',
-  coralDeep: '#e00b41',
-};
 
 interface AuthScreenProps {
   onSignIn: (email: string, password: string) => void;

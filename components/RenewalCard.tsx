@@ -5,6 +5,7 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Card } from '@/components/ui/Card';
 import type { Renewal } from '@/types/renewal';
 import { getDaysUntilRenewal, getRenewalStatus, formatCurrency } from '@/types/renewal';
+import { AIRBNB } from '@/constants/airbnb-colors';
 
 const isWeb = Platform.OS === 'web';
 
@@ -23,7 +24,7 @@ export function RenewalCard({ renewal, onPress }: RenewalCardProps) {
       case 'overdue': return '#FF3B30';
       case 'soon': return '#FF9500';
       case 'upcoming': return '#30D158';
-      default: return '#6a6a6a';
+      default: return AIRBNB.slate;
     }
   };
 
@@ -34,9 +35,9 @@ export function RenewalCard({ renewal, onPress }: RenewalCardProps) {
     return `Vence en ${daysUntil} días`;
   };
 
-  const iconColor = renewal.color || (isWeb ? '#222222' : '#007AFF');
-  const textPrimary = isWeb ? '#222222' : '#000000';
-  const textSecondary = isWeb ? '#6a6a6a' : '#666666';
+  const iconColor = renewal.color || (isWeb ? AIRBNB.carbon : '#007AFF');
+  const textPrimary = isWeb ? AIRBNB.carbon : '#000000';
+  const textSecondary = isWeb ? AIRBNB.slate : '#666666';
 
   const handlePress = () => {
     if (onPress) {

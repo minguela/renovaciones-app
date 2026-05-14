@@ -1,5 +1,6 @@
 import React from 'react';
 import { TouchableOpacity, Text, StyleSheet, ActivityIndicator, Platform } from 'react-native';
+import { AIRBNB } from '@/constants/airbnb-colors';
 
 interface ButtonProps {
   title: string;
@@ -16,27 +17,27 @@ const isWeb = Platform.OS === 'web';
 
 export function Button({ title, onPress, variant = 'primary', disabled, loading, size = 'md', style, textStyle }: ButtonProps) {
   const getBackgroundColor = () => {
-    if (disabled || loading) return isWeb ? '#f7f7f7' : '#C7C7CC';
-    if (variant === 'primary') return isWeb ? '#ff385c' : '#007AFF';
+    if (disabled || loading) return isWeb ? AIRBNB.canvas : '#C7C7CC';
+    if (variant === 'primary') return isWeb ? AIRBNB.coral : '#007AFF';
     if (variant === 'danger') return isWeb ? 'transparent' : '#FF3B30';
     if (variant === 'ghost') return 'transparent';
     return 'transparent';
   };
 
   const getTextColor = () => {
-    if (disabled || loading) return isWeb ? '#c1c1c1' : '#FFFFFF';
+    if (disabled || loading) return isWeb ? AIRBNB.silver : '#FFFFFF';
     if (variant === 'primary') return '#FFFFFF';
-    if (variant === 'danger') return isWeb ? '#ff385c' : '#FFFFFF';
-    if (variant === 'ghost') return isWeb ? '#222222' : '#007AFF';
-    return isWeb ? '#222222' : '#007AFF';
+    if (variant === 'danger') return isWeb ? AIRBNB.coral : '#FFFFFF';
+    if (variant === 'ghost') return isWeb ? AIRBNB.carbon : '#007AFF';
+    return isWeb ? AIRBNB.carbon : '#007AFF';
   };
 
   const getBorderColor = () => {
-    if (disabled || loading) return isWeb ? '#ebebeb' : 'transparent';
+    if (disabled || loading) return isWeb ? AIRBNB.mist : 'transparent';
     if (variant === 'primary') return 'transparent';
-    if (variant === 'danger') return isWeb ? '#ff385c' : 'transparent';
+    if (variant === 'danger') return isWeb ? AIRBNB.coral : 'transparent';
     if (variant === 'ghost') return 'transparent';
-    return isWeb ? '#222222' : '#007AFF';
+    return isWeb ? AIRBNB.carbon : '#007AFF';
   };
 
   const sizeStyles = {
