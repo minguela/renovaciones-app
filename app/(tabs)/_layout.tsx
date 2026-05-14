@@ -6,6 +6,7 @@ import { HapticTab } from '@/components/haptic-tab';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { AIRBNB } from '@/constants/airbnb-colors';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
@@ -15,8 +16,8 @@ export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: isWeb ? '#ff385c' : Colors[colorScheme ?? 'light'].tint,
-        tabBarInactiveTintColor: isWeb ? '#6a6a6a' : Colors[colorScheme ?? 'light'].icon,
+        tabBarActiveTintColor: isWeb ? AIRBNB.coral : Colors[colorScheme ?? 'light'].tint,
+        tabBarInactiveTintColor: isWeb ? AIRBNB.slate : Colors[colorScheme ?? 'light'].icon,
         headerShown: false,
         tabBarButton: HapticTab,
         tabBarStyle: { display: 'none' },

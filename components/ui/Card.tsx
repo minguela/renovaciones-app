@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, StyleSheet, ViewStyle, Platform } from 'react-native';
 import { useThemeColor } from '@/hooks/use-theme-color';
+import { AIRBNB } from '@/constants/airbnb-colors';
 
 interface CardProps {
   children: React.ReactNode;
@@ -15,7 +16,7 @@ export function Card({ children, style, variant = 'default' }: CardProps) {
     { light: '#FFFFFF', dark: '#1C1C1E' },
     'background'
   );
-  const borderColor = isWeb ? '#ebebeb' : useThemeColor(
+  const borderColor = isWeb ? AIRBNB.mist : useThemeColor(
     { light: '#E5E5EA', dark: '#38383A' },
     'background'
   );
@@ -26,8 +27,8 @@ export function Card({ children, style, variant = 'default' }: CardProps) {
         style={[
           styles.webCard,
           {
-            backgroundColor: '#ffffff',
-            borderColor: variant === 'form' ? '#ebebeb' : '#ebebeb',
+            backgroundColor: AIRBNB.card,
+            borderColor: variant === 'form' ? AIRBNB.mist : AIRBNB.mist,
             borderWidth: 1,
             borderRadius: 20,
           },

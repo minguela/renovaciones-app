@@ -17,18 +17,9 @@ import { useThemeColor } from '@/hooks/use-theme-color';
 import { calculateYearlyCost, calculateMonthlyCost, groupByMonth } from '@/lib/calculations';
 import { getDaysUntilRenewal, type Renewal, STATUS_OPTIONS } from '@/types/renewal';
 import { exportRenewalsToCSV, exportToCSVFile } from '@/lib/export';
+import { AIRBNB } from '@/constants/airbnb-colors';
 
 const isWeb = Platform.OS === 'web';
-
-const AIRBNB = {
-  canvas: '#f7f7f7',
-  card: '#ffffff',
-  carbon: '#222222',
-  slate: '#6a6a6a',
-  mist: '#ebebeb',
-  coral: '#ff385c',
-  coralDeep: '#e00b41',
-};
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -568,7 +559,7 @@ const styles = StyleSheet.create({
   },
   timelineNames: {
     fontSize: 13,
-    color: '#6a6a6a',
+    color: AIRBNB.slate,
     lineHeight: 18,
   },
   webTimelineNames: {
@@ -627,7 +618,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   exportButtonWebText: {
-    color: '#ffffff',
+    color: AIRBNB.cloud,
     fontSize: 14,
     fontWeight: '600',
   },

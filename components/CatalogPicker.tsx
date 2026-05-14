@@ -16,19 +16,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { CatalogCategories, CatalogCategory, CatalogOption } from '@/types/catalog';
 import { RENEWAL_TYPES, COLORS } from '@/types/renewal';
+import { AIRBNB as TOKENS } from '@/constants/airbnb-colors';
 
 const isWeb = Platform.OS === 'web';
-
-/* ─── Airbnb tokens ─── */
-const TOKENS = {
-  canvas: '#f7f7f7',
-  card: '#ffffff',
-  carbon: '#222222',
-  slate: '#6a6a6a',
-  mist: '#ebebeb',
-  coral: '#ff385c',
-  coralDeep: '#e00b41',
-};
 
 interface CatalogPickerProps {
   visible: boolean;

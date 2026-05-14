@@ -14,6 +14,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { uploadAttachment, deleteAttachment, getAttachmentUrl } from '@/lib/supabase';
+import { AIRBNB } from '@/constants/airbnb-colors';
 
 const isWeb = Platform.OS === 'web';
 
@@ -185,7 +186,7 @@ export function AttachmentsUploader({
             style={styles.fileInput}
             onChange={handleWebFileChange}
           />
-          <IconSymbol name="doc.badge.arrow.up" size={32} color="#ff385c" />
+          <IconSymbol name="doc.badge.arrow.up" size={32} color={AIRBNB.coral} />
           <Text style={styles.dropZoneText}>
             Arrastra archivos aquí o haz clic para seleccionar
           </Text>
@@ -206,7 +207,7 @@ export function AttachmentsUploader({
 
       {uploading && (
         <View style={styles.uploadingRow}>
-          <ActivityIndicator size="small" color={isWeb ? '#ff385c' : '#007AFF'} />
+          <ActivityIndicator size="small" color={isWeb ? AIRBNB.coral : '#007AFF'} />
           <Text style={[styles.uploadingText, isWeb && styles.uploadingTextWeb]}>
             Subiendo archivo...
           </Text>
@@ -234,7 +235,7 @@ export function AttachmentsUploader({
                     <IconSymbol
                       name={pdfFile ? 'doc.text' : 'doc'}
                       size={28}
-                      color={isWeb ? '#ff385c' : '#007AFF'}
+                      color={isWeb ? AIRBNB.coral : '#007AFF'}
                     />
                   </View>
                 )}
@@ -290,7 +291,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   } as any,
   dropZoneActive: {
-    borderColor: '#ff385c',
+    borderColor: AIRBNB.coral,
     backgroundColor: 'rgba(102, 58, 243, 0.08)',
   } as any,
   fileInput: {
@@ -306,13 +307,13 @@ const styles = StyleSheet.create({
     zIndex: 2,
   } as any,
   dropZoneText: {
-    color: '#222222',
+    color: AIRBNB.carbon,
     fontSize: 14,
     fontWeight: '500',
     marginTop: 12,
   },
   dropZoneSubtext: {
-    color: '#6a6a6a',
+    color: AIRBNB.slate,
     fontSize: 12,
     marginTop: 4,
   },
@@ -346,7 +347,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   uploadingTextWeb: {
-    color: '#6a6a6a',
+    color: AIRBNB.slate,
   },
   list: {
     marginTop: 12,
@@ -401,7 +402,7 @@ const styles = StyleSheet.create({
     color: '#000000',
   },
   itemNameWeb: {
-    color: '#222222',
+    color: AIRBNB.carbon,
   },
   itemType: {
     fontSize: 12,
@@ -409,7 +410,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   itemTypeWeb: {
-    color: '#6a6a6a',
+    color: AIRBNB.slate,
   },
   deleteButton: {
     padding: 6,

@@ -2,6 +2,7 @@ import { StyleSheet, Text, type TextProps, Platform } from 'react-native';
 
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { Fonts } from '@/constants/theme';
+import { AIRBNB } from '@/constants/airbnb-colors';
 
 export type ThemedTextProps = TextProps & {
   lightColor?: string;
@@ -70,7 +71,7 @@ const styles = StyleSheet.create({
   link: {
     lineHeight: isWeb ? 21 : 30,
     fontSize: isWeb ? 14 : 16,
-    color: isWeb ? '#ff385c' : '#0a7ea4',
+    color: isWeb ? AIRBNB.coral : '#0a7ea4',
     letterSpacing: isWeb ? -0.01 : 0,
     fontFamily: isWeb ? Fonts.sans : undefined,
   },

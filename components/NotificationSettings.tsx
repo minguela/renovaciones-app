@@ -12,18 +12,9 @@ import {
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { supabase, type Profile } from '@/lib/supabase';
+import { AIRBNB } from '@/constants/airbnb-colors';
 
 const isWeb = Platform.OS === 'web';
-
-const AIRBNB = {
-  canvas: '#f7f7f7',
-  card: '#ffffff',
-  carbon: '#222222',
-  slate: '#6a6a6a',
-  mist: '#ebebeb',
-  coral: '#ff385c',
-  coralDeep: '#e00b41',
-};
 
 export function NotificationSettings() {
   const [profile, setProfile] = useState<Profile | null>(null);

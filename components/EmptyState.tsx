@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, Platform } from 'react-native';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { AIRBNB } from '@/constants/airbnb-colors';
 
 const isWeb = Platform.OS === 'web';
 
@@ -8,12 +9,12 @@ export function EmptyState() {
   return (
     <View style={styles.container}>
       <View style={styles.iconContainer}>
-        <IconSymbol name="doc.text" size={48} color={isWeb ? '#6a6a6a' : '#C7C7CC'} />
+        <IconSymbol name="doc.text" size={48} color={isWeb ? AIRBNB.slate : '#C7C7CC'} />
       </View>
-      <Text style={[styles.title, { color: isWeb ? '#222222' : '#000000' }]}>
+      <Text style={[styles.title, { color: isWeb ? AIRBNB.carbon : '#000000' }]}>
         No hay renovaciones
       </Text>
-      <Text style={[styles.subtitle, { color: isWeb ? '#6a6a6a' : '#666666' }]}>
+      <Text style={[styles.subtitle, { color: isWeb ? AIRBNB.slate : '#666666' }]}>
         Añade tu primera renovación para empezar a gestionar tus seguros y suscripciones
       </Text>
     </View>
