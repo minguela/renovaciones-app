@@ -6,7 +6,7 @@ import { sendTelegramMessage } from '../lib/notifications/telegram';
 import { sendEmail, createRenewalReminderEmail } from '../lib/notifications/email';
 
 // Supabase service key for server-side operations
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY || '';
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 const SUPABASE_URL = process.env.SUPABASE_URL || '';
 
 export default async function handler(req: any, res: any) {
