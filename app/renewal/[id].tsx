@@ -11,7 +11,6 @@ import {
   Switch,
 } from 'react-native';
 import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { AIRBNB } from '@/constants/airbnb-colors';
 import { ThemedView } from '@/components/themed-view';
@@ -25,6 +24,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { useCustomCatalogs } from '@/hooks/useCustomCatalogs';
 import { CatalogCategory } from '@/types/catalog';
 import { useThemeColor } from '@/hooks/use-theme-color';
+import { AuthScreen } from '@/components/AuthScreen';
+import { Screen } from '@/components/layout/Screen';
 import {
   type Renewal,
   type RenewalFormData,
@@ -96,7 +97,18 @@ export default function RenewalFormScreen() {
   const params = useLocalSearchParams<{ id?: string }>();
   const id = params.id ?? 'new';
   const isEditing = id !== 'new';
-  const { user } = useAuth();
+  const {
+    user,
+    isAuthenticated,
+    loading: authLoading,
+    authProcessing,
+    signIn,
+    signUp,
+    signInWithGoogle,
+    signInWithApple,
+    authMessage,
+    authError,
+  } = useAuth();
   const { addRenewal, updateRenewal, deleteRenewal, getRenewalById } = useRenewals(user?.id);
   const { catalogs: customCatalogs, addCatalog: addCustomCatalog } = useCustomCatalogs(user?.id);
 
@@ -304,6 +316,28 @@ export default function RenewalFormScreen() {
     );
   }
 
+  if (authLoading) {
+    return (
+      <ThemedView style={styles.centerContainer}>
+        <ActivityIndicator size="large" />
+      </ThemedView>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <AuthScreen
+        onSignIn={signIn}
+        onSignUp={signUp}
+        onGoogleSignIn={signInWithGoogle}
+        onAppleSignIn={signInWithApple}
+        loading={authProcessing}
+        authMessage={authMessage}
+        authError={authError}
+      />
+    );
+  }
+
   const sectionTitleStyle = isWeb
     ? { color: AIRBNB.carbon, fontWeight: '600' as const, fontSize: 13, textTransform: 'uppercase' as const, letterSpacing: 0.5 }
     : { color: '#8E8E93', fontWeight: '600' as const, fontSize: 13, textTransform: 'uppercase' as const };
@@ -319,7 +353,7 @@ export default function RenewalFormScreen() {
   const pillUnselectedBorder = isWeb ? AIRBNB.mist : 'transparent';
 
   return (
-    <SafeAreaView style={[styles.container, isWeb && { backgroundColor: AIRBNB.canvas }]}>
+    <Screen kind="form" style={[styles.container, isWeb && { backgroundColor: AIRBNB.canvas }]}>
       <Stack.Screen options={{ headerShown: false }} />
 
       {/* Custom Header */}
@@ -867,7 +901,7 @@ export default function RenewalFormScreen() {
           });
         }}
       />
-    </SafeAreaView>
+    </Screen>
   );
 }
 

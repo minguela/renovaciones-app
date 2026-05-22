@@ -25,8 +25,7 @@ export default function RootLayout() {
   // Initialize global auth listener
   useAuth();
 
-  // On web, always use light theme to match Airbnb design; native respects system
-  const activeTheme = isWeb ? DefaultTheme : (colorScheme === 'dark' ? DarkTheme : DefaultTheme);
+  const activeTheme = colorScheme === 'dark' ? DarkTheme : DefaultTheme;
 
   // Restore session on mount
   useEffect(() => {
@@ -78,6 +77,7 @@ export default function RootLayout() {
       <ThemeProvider value={activeTheme}>
         <Stack>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="settings" options={{ headerShown: false }} />
           <Stack.Screen 
             name="renewal/[id]" 
             options={{ 

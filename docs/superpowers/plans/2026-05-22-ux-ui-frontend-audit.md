@@ -14,10 +14,10 @@
 
 - Read: `README.md` for declared product scope and setup.
 - Read: `package.json` for runtime scripts and stack.
-- Read: `app/_layout.tsx`, `app/(tabs)/_layout.tsx`, `app/(tabs)/index.tsx`, `app/(tabs)/explore.tsx`, `app/renewal/[id].tsx` for route and screen structure.
-- Read: `components/AuthScreen.tsx`, `components/RenewalCard.tsx`, `components/NotificationSettings.tsx`, `components/EmptyState.tsx` for feature UI.
-- Read: `components/ui/Button.tsx`, `components/ui/Input.tsx`, `components/ui/Card.tsx`, `constants/theme.ts`, `hooks/use-theme-color.ts`, `hooks/use-color-scheme.web.ts` for visual primitives and theming.
-- Read: `hooks/useRenewals.ts`, `lib/supabase.ts`, `types/renewal.ts` for UX-affecting data states.
+- Read: `app/_layout.tsx`, `app/(tabs)/_layout.tsx`, `app/(tabs)/index.tsx`, `app/renewal/[id].tsx`, `app/renewal/new.tsx`, `app/modal.tsx` for route and screen structure.
+- Read: `components/AuthScreen.tsx`, `components/RenewalCard.tsx`, `components/RenewalFilters.tsx`, `components/CatalogPicker.tsx`, `components/AttachmentsUploader.tsx`, `components/NotificationSettings.tsx`, `components/EmptyState.tsx` for feature UI.
+- Read: `components/ui/Button.tsx`, `components/ui/Input.tsx`, `components/ui/Card.tsx`, `components/ui/Toast.tsx`, `constants/theme.ts`, `constants/airbnb-colors.ts`, `hooks/use-theme-color.ts`, `hooks/use-color-scheme.web.ts` for visual primitives and theming.
+- Read: `hooks/useAuth.ts`, `hooks/useRenewals.ts`, `hooks/useCustomCatalogs.ts`, `lib/calculations.ts`, `lib/export.ts`, `lib/supabase.ts`, `types/renewal.ts` for UX-affecting data states.
 - Create only if a persisted audit artifact is needed: `docs/superpowers/reports/2026-05-22-ux-ui-frontend-audit.md`.
 - Avoid source edits during the audit unless a blocker prevents evidence gathering and the user approves the change.
 
@@ -27,6 +27,7 @@
 - Read: `components/AuthScreen.tsx`
 - Read: `app/(tabs)/index.tsx`
 - Read: `app/renewal/[id].tsx`
+- Read: `app/renewal/new.tsx`
 - Read: `components/NotificationSettings.tsx`
 
 - [ ] **Step 1: Define the tested flow**
@@ -126,11 +127,14 @@ Expected evidence: notes distinguishing observed feedback from unreachable state
 - Read: `app/_layout.tsx`
 - Read: `app/(tabs)/_layout.tsx`
 - Read: `app/(tabs)/index.tsx`
-- Read: `app/(tabs)/explore.tsx`
 - Read: `app/renewal/[id].tsx`
+- Read: `app/renewal/new.tsx`
 - Read: `components/**/*.tsx`
 - Read: `constants/theme.ts`
+- Read: `constants/airbnb-colors.ts`
 - Read: `hooks/**/*.ts`
+- Read: `lib/calculations.ts`
+- Read: `lib/export.ts`
 - Read: `lib/supabase.ts`
 - Read: `types/renewal.ts`
 
@@ -142,7 +146,7 @@ Use CodeGraph and targeted file reads:
 app root layout
 tab layout
 home/list screen
-settings/explore screen
+settings/contact surface
 renewal form route
 modal route
 ```
