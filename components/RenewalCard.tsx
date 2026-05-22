@@ -1,13 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Platform, Animated } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
 import { useRouter } from 'expo-router';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Card } from '@/components/ui/Card';
+import { StatusBadge } from '@/components/ui/StatusBadge';
 import type { Renewal } from '@/types/renewal';
 import { getDaysUntilRenewal, getRenewalStatus, formatCurrency } from '@/types/renewal';
-import { AIRBNB } from '@/constants/airbnb-colors';
-
-const isWeb = Platform.OS === 'web';
+import { useSemanticTheme } from '@/constants/design-tokens';
 
 interface RenewalCardProps {
   renewal: Renewal;
@@ -17,6 +16,7 @@ interface RenewalCardProps {
 }
 
 export function RenewalCard({ renewal, onPress, onDelete, onEdit }: RenewalCardProps) {
+  const { colors } = useSemanticTheme();
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -29,27 +29,26 @@ export function RenewalCard({ renewal, onPress, onDelete, onEdit }: RenewalCardP
       duration: 150,
       useNativeDriver: true,
     }).start();
-  }, [menuOpen]);
-
-  const getStatusColor = () => {
-    switch (status) {
-      case 'overdue': return '#FF3B30';
-      case 'soon': return '#FF9500';
-      case 'upcoming': return '#30D158';
-      default: return AIRBNB.slate;
-    }
-  };
+  }, [menuOpen, fadeAnim]);
 
   const getStatusText = () => {
-    if (daysUntil < 0) return `Vencido hace ${Math.abs(daysUntil)} días`;
-    if (daysUntil === 0) return 'Vence hoy';
-    if (daysUntil === 1) return 'Vence mañana';
-    return `Vence en ${daysUntil} días`;
+    if (daysUntil < 0) return 'Vencida';
+    if (daysUntil === 0) return 'Hoy';
+    if (daysUntil === 1) return '1 día';
+    if (daysUntil > 30) return '30+ días';
+    return `${daysUntil} días`;
   };
 
-  const iconColor = renewal.color || (isWeb ? AIRBNB.carbon : '#007AFF');
-  const textPrimary = isWeb ? AIRBNB.carbon : '#000000';
-  const textSecondary = isWeb ? AIRBNB.slate : '#666666';
+  const getStatusTone = (): 'danger' | 'warning' | 'success' | 'muted' => {
+    if (status === 'overdue') return 'danger';
+    if (status === 'soon') return 'warning';
+    if (status === 'upcoming') return 'success';
+    return 'muted';
+  };
+
+  const iconColor = renewal.color || colors.accentPrimary;
+  const textPrimary = colors.textPrimary;
+  const textSecondary = colors.textSecondary;
 
   const handlePress = () => {
     if (menuOpen) {
@@ -95,10 +94,7 @@ export function RenewalCard({ renewal, onPress, onDelete, onEdit }: RenewalCardP
           </View>
 
           <View style={styles.statusContainer}>
-            <View style={[styles.statusDot, { backgroundColor: getStatusColor() }]} />
-            <Text style={[styles.statusText, { color: getStatusColor() }]}>
-              {getStatusText()}
-            </Text>
+            <StatusBadge label={getStatusText()} tone={getStatusTone()} />
           </View>
         </View>
 
@@ -114,7 +110,7 @@ export function RenewalCard({ renewal, onPress, onDelete, onEdit }: RenewalCardP
           <IconSymbol
             name="ellipsis"
             size={20}
-            color={isWeb ? AIRBNB.slate : '#8E8E93'}
+            color={colors.textSecondary}
           />
         </TouchableOpacity>
 
@@ -129,7 +125,7 @@ export function RenewalCard({ renewal, onPress, onDelete, onEdit }: RenewalCardP
                 router.push(`/renewal/${renewal.id}`);
               }}
             >
-              <IconSymbol name="eye" size={14} color={AIRBNB.carbon} />
+              <IconSymbol name="eye" size={14} color={colors.textPrimary} />
               <Text style={styles.actionText}>Ver detalles</Text>
             </TouchableOpacity>
 
@@ -142,7 +138,7 @@ export function RenewalCard({ renewal, onPress, onDelete, onEdit }: RenewalCardP
                   onEdit(renewal);
                 }}
               >
-                <IconSymbol name="pencil" size={14} color={AIRBNB.carbon} />
+                <IconSymbol name="pencil" size={14} color={colors.textPrimary} />
                 <Text style={styles.actionText}>Editar</Text>
               </TouchableOpacity>
             )}
@@ -156,7 +152,7 @@ export function RenewalCard({ renewal, onPress, onDelete, onEdit }: RenewalCardP
                   onDelete(renewal);
                 }}
               >
-                <IconSymbol name="trash" size={14} color={AIRBNB.coral} />
+                <IconSymbol name="trash" size={14} color={colors.statusDanger} />
                 <Text style={[styles.actionText, styles.actionTextDanger]}>Eliminar</Text>
               </TouchableOpacity>
             )}
@@ -218,16 +214,6 @@ const styles = StyleSheet.create({
   statusContainer: {
     alignItems: 'flex-end',
     marginLeft: 8,
-  },
-  statusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginBottom: 4,
-  },
-  statusText: {
-    fontSize: 11,
-    fontWeight: '500',
   },
   menuBtn: {
     position: 'absolute',

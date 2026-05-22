@@ -1,7 +1,6 @@
 import React from 'react';
 import { View, StyleSheet, ViewStyle, Platform } from 'react-native';
-import { useThemeColor } from '@/hooks/use-theme-color';
-import { AIRBNB } from '@/constants/airbnb-colors';
+import { useSemanticTheme } from '@/constants/design-tokens';
 
 interface CardProps {
   children: React.ReactNode;
@@ -12,15 +11,7 @@ interface CardProps {
 const isWeb = Platform.OS === 'web';
 
 export function Card({ children, style, variant = 'default' }: CardProps) {
-  const backgroundColor = useThemeColor(
-    { light: '#FFFFFF', dark: '#1C1C1E' },
-    'background'
-  );
-  const themeBorderColor = useThemeColor(
-    { light: '#E5E5EA', dark: '#38383A' },
-    'background'
-  );
-  const borderColor = isWeb ? AIRBNB.mist : themeBorderColor;
+  const { colors, radius } = useSemanticTheme();
 
   if (isWeb) {
     return (
@@ -28,10 +19,10 @@ export function Card({ children, style, variant = 'default' }: CardProps) {
         style={[
           styles.webCard,
           {
-            backgroundColor: AIRBNB.card,
-            borderColor: variant === 'form' ? AIRBNB.mist : AIRBNB.mist,
+            backgroundColor: colors.bgSurface,
+            borderColor: colors.borderSubtle,
             borderWidth: 1,
-            borderRadius: 20,
+            borderRadius: variant === 'form' ? radius.xl : radius.lg,
           },
           style,
         ]}
@@ -45,7 +36,7 @@ export function Card({ children, style, variant = 'default' }: CardProps) {
     <View
       style={[
         styles.card,
-        { backgroundColor, borderColor },
+        { backgroundColor: colors.bgSurface, borderColor: colors.borderSubtle, borderRadius: radius.lg },
         style,
       ]}
     >
@@ -56,10 +47,7 @@ export function Card({ children, style, variant = 'default' }: CardProps) {
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: 12,
     padding: 16,
-    marginHorizontal: 16,
-    marginVertical: 8,
     borderWidth: 1,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
@@ -69,8 +57,6 @@ const styles = StyleSheet.create({
   },
   webCard: {
     padding: 24,
-    marginHorizontal: 0,
-    marginVertical: 8,
     overflow: 'hidden',
   },
 });

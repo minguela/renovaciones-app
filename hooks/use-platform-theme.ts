@@ -9,7 +9,7 @@ export function usePlatformTheme() {
     return {
       isWeb: true,
       colors: WebColors,
-      colorScheme: 'dark' as const, // Web is always dark
+      colorScheme: 'light' as const,
     };
   }
 

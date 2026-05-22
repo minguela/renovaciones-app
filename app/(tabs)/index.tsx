@@ -1,7 +1,7 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { StyleSheet, FlatList, View, ActivityIndicator, RefreshControl, ScrollView, Platform, TouchableOpacity, useWindowDimensions, Text, Alert } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Screen } from '@/components/layout/Screen';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -9,14 +9,15 @@ import { RenewalCard } from '@/components/RenewalCard';
 import { EmptyState } from '@/components/EmptyState';
 import { RenewalFilters, DEFAULT_FILTERS, applyFilters, type FilterState } from '@/components/RenewalFilters';
 import { Button } from '@/components/ui/Button';
+import { IconButton } from '@/components/ui/IconButton';
+import { InlineBanner } from '@/components/ui/InlineBanner';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { AuthScreen } from '@/components/AuthScreen';
-import { NotificationSettings } from '@/components/NotificationSettings';
 import { useRenewals } from '@/hooks/useRenewals';
 import { useAuth } from '@/hooks/useAuth';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { calculateYearlyCost, calculateMonthlyCost } from '@/lib/calculations';
-import { getDaysUntilRenewal, type Renewal, STATUS_OPTIONS } from '@/types/renewal';
+import { getDaysUntilRenewal } from '@/types/renewal';
 import { exportRenewalsToCSV, exportToCSVFile } from '@/lib/export';
 import { AIRBNB } from '@/constants/airbnb-colors';
 
@@ -41,7 +42,6 @@ export default function HomeScreen() {
     authError,
   } = useAuth();
   const { renewals, loading, error, refresh } = useRenewals(user?.id);
-  const [showSettings, setShowSettings] = useState(false);
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
   const [summaryExpanded, setSummaryExpanded] = useState(false);
   const tintColor = useThemeColor({ light: '#007AFF', dark: '#0A84FF' }, 'tint');
@@ -200,7 +200,7 @@ export default function HomeScreen() {
           />
         )}
         contentContainerStyle={filteredRenewals.length === 0 && styles.emptyList}
-        ListEmptyComponent={<EmptyState />}
+        ListEmptyComponent={<EmptyState onPrimaryAction={() => router.push('/renewal/new')} />}
         refreshControl={
           <RefreshControl refreshing={loading} onRefresh={refresh} tintColor={tintColor} />
         }
@@ -231,15 +231,13 @@ export default function HomeScreen() {
           <ThemedText style={styles.secondaryActionButtonText}>Exportar CSV</ThemedText>
         </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.secondaryActionButton}
-            onPress={() => setShowSettings(!showSettings)}
-            activeOpacity={0.8}
-          >
-            <ThemedText style={styles.secondaryActionButtonText}>
-              {showSettings ? 'Ocultar datos de contacto' : 'Datos de contacto'}
-            </ThemedText>
-          </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.secondaryActionButton}
+          onPress={() => router.push('/settings')}
+          activeOpacity={0.8}
+        >
+          <ThemedText style={styles.secondaryActionButtonText}>Ajustes</ThemedText>
+        </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.secondaryActionButton}
@@ -250,12 +248,6 @@ export default function HomeScreen() {
             Cerrar sesión
           </ThemedText>
         </TouchableOpacity>
-
-        {showSettings && (
-          <View style={{ marginTop: 16 }}>
-            <NotificationSettings />
-          </View>
-        )}
       </View>
     </View>
   ) : null;
@@ -312,7 +304,8 @@ export default function HomeScreen() {
   ) : null;
 
   return (
-    <SafeAreaView style={[styles.container, isWeb && styles.webContainer]}>
+    <Screen kind="dashboard" style={[styles.container, isWeb && styles.webContainer]}>
+      {error ? <InlineBanner kind="error" message={error} /> : null}
       <Stack.Screen
         options={{
           title: 'Mis Renovaciones',
@@ -335,12 +328,7 @@ export default function HomeScreen() {
                     size="sm"
                   />
                 )}
-                <Button
-                  title="⚙️"
-                  onPress={() => setShowSettings(!showSettings)}
-                  variant="secondary"
-                  size="sm"
-                />
+                <IconButton icon="gearshape" label="Abrir ajustes" onPress={() => router.push('/settings')} />
                 <Button
                   title="Salir"
                   onPress={handleSignOut}
@@ -376,13 +364,13 @@ export default function HomeScreen() {
               </TouchableOpacity>
             )}
             <Button
-              title="+ Añadir Renovación"
+              title="Nueva renovación"
               onPress={() => router.push('/renewal/new')}
             />
           </View>
         </>
       )}
-    </SafeAreaView>
+    </Screen>
   );
 }
 

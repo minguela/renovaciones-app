@@ -8,11 +8,10 @@ import {
   ActivityIndicator,
   Platform,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { Button } from '@/components/ui/Button';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { AIRBNB } from '@/constants/airbnb-colors';
+import { Screen } from '@/components/layout/Screen';
+import { useSemanticTheme } from '@/constants/design-tokens';
 
 const isWeb = Platform.OS === 'web';
 
@@ -35,6 +34,7 @@ export function AuthScreen({
   authMessage,
   authError,
 }: AuthScreenProps) {
+  const { colors, spacing, radius } = useSemanticTheme();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -63,7 +63,7 @@ export function AuthScreen({
   const displayedError = validationError || authError || null;
 
   return (
-    <SafeAreaView style={[styles.container, isWeb && styles.webContainer]}>
+    <Screen kind="form" style={isWeb ? styles.webContainer : undefined}>
       <View style={[styles.content, isWeb && styles.webContent]}>
         <View style={styles.header}>
           <Text style={styles.title}>
@@ -131,27 +131,27 @@ export function AuthScreen({
         </View>
 
         <View style={styles.separator}>
-          <View style={[styles.separatorLine, { backgroundColor: isWeb ? AIRBNB.mist : '#E5E5EA' }]} />
-          <Text style={[styles.separatorText, { color: isWeb ? AIRBNB.slate : '#666666' }]}>o</Text>
-          <View style={[styles.separatorLine, { backgroundColor: isWeb ? AIRBNB.mist : '#E5E5EA' }]} />
+          <View style={[styles.separatorLine, { backgroundColor: colors.borderSubtle }]} />
+          <Text style={[styles.separatorText, { color: colors.textMuted }]}>o</Text>
+          <View style={[styles.separatorLine, { backgroundColor: colors.borderSubtle }]} />
         </View>
 
         <View style={[styles.form, isWeb && styles.webForm]}>
           <View style={styles.inputContainer}>
-            <Text style={[styles.label, { color: isWeb ? AIRBNB.carbon : '#3C3C43' }]}>Email</Text>
+            <Text style={[styles.label, { color: colors.textPrimary }]}>Email</Text>
             <TextInput
               style={[
                 styles.input,
                 {
-                  backgroundColor: isWeb ? AIRBNB.card : '#F2F2F7',
-                  color: isWeb ? AIRBNB.carbon : '#000000',
-                  borderColor: isWeb ? AIRBNB.mist : 'transparent',
-                  borderWidth: isWeb ? 1 : 0,
-                  borderRadius: isWeb ? 14 : 8,
+                  backgroundColor: colors.bgSurface,
+                  color: colors.textPrimary,
+                  borderColor: colors.borderSubtle,
+                  borderWidth: 1,
+                  borderRadius: radius.lg,
                 },
               ]}
               placeholder="tu@email.com"
-              placeholderTextColor={isWeb ? AIRBNB.slate : '#8E8E93'}
+              placeholderTextColor={colors.textMuted}
               value={email}
               onChangeText={setEmail}
               keyboardType="email-address"
@@ -161,20 +161,20 @@ export function AuthScreen({
           </View>
 
           <View style={styles.inputContainer}>
-            <Text style={[styles.label, { color: isWeb ? AIRBNB.carbon : '#3C3C43' }]}>Contraseña</Text>
+            <Text style={[styles.label, { color: colors.textPrimary }]}>Contraseña</Text>
             <TextInput
               style={[
                 styles.input,
                 {
-                  backgroundColor: isWeb ? AIRBNB.card : '#F2F2F7',
-                  color: isWeb ? AIRBNB.carbon : '#000000',
-                  borderColor: isWeb ? AIRBNB.mist : 'transparent',
-                  borderWidth: isWeb ? 1 : 0,
-                  borderRadius: isWeb ? 14 : 8,
+                  backgroundColor: colors.bgSurface,
+                  color: colors.textPrimary,
+                  borderColor: colors.borderSubtle,
+                  borderWidth: 1,
+                  borderRadius: radius.lg,
                 },
               ]}
               placeholder="******"
-              placeholderTextColor={isWeb ? AIRBNB.slate : '#8E8E93'}
+              placeholderTextColor={colors.textMuted}
               value={password}
               onChangeText={setPassword}
               secureTextEntry
@@ -189,19 +189,25 @@ export function AuthScreen({
             disabled={loading}
             size="lg"
           />
+
+          <TouchableOpacity
+            style={{ marginTop: spacing.lg, alignSelf: 'center' }}
+            onPress={() => setIsLogin((prev) => !prev)}
+            disabled={loading}
+            activeOpacity={0.8}
+          >
+            <Text style={{ color: colors.accentPrimary, fontWeight: '600' }}>
+              {isLogin ? '¿No tienes cuenta? Crear cuenta' : '¿Ya tienes cuenta? Iniciar sesión'}
+            </Text>
+          </TouchableOpacity>
         </View>
       </View>
-    </SafeAreaView>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: isWeb ? AIRBNB.canvas : '#F2F2F7',
-  },
   webContainer: {
-    alignItems: 'center',
     justifyContent: 'center',
   },
   content: {
@@ -222,14 +228,14 @@ const styles = StyleSheet.create({
     fontSize: 32,
     fontWeight: '600',
     marginBottom: 8,
-    color: isWeb ? AIRBNB.carbon : '#000000',
+    color: '#15181D',
     letterSpacing: -0.02,
   },
   subtitle: {
     fontSize: 16,
     textAlign: 'center',
     lineHeight: 24,
-    color: isWeb ? AIRBNB.slate : '#666666',
+    color: '#5D6672',
   },
   banner: {
     borderRadius: 10,
@@ -284,7 +290,7 @@ const styles = StyleSheet.create({
   googleButton: {
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: isWeb ? AIRBNB.mist : 'rgba(0, 0, 0, 0.1)',
+    borderColor: 'rgba(0, 0, 0, 0.1)',
   },
   oauthIcon: {
     marginRight: 10,

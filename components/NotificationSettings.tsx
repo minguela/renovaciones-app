@@ -1,27 +1,21 @@
-import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TextInput,
-  TouchableOpacity,
-  Alert,
-  ActivityIndicator,
-  Platform,
-} from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, StyleSheet, Switch, Text, View } from 'react-native';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { supabase, type Profile } from '@/lib/supabase';
-import { AIRBNB } from '@/constants/airbnb-colors';
-
-const isWeb = Platform.OS === 'web';
+import { Field } from '@/components/ui/Field';
+import { Input } from '@/components/ui/Input';
+import { InlineBanner } from '@/components/ui/InlineBanner';
+import { supabase } from '@/lib/supabase';
+import { useSemanticTheme } from '@/constants/design-tokens';
+import { useToast } from '@/hooks/useToast';
 
 export function NotificationSettings() {
-  const [profile, setProfile] = useState<Profile | null>(null);
+  const { colors, spacing } = useSemanticTheme();
+  const { showToast } = useToast();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Contact data
   const [whatsappNumber, setWhatsappNumber] = useState('');
   const [telegramChatId, setTelegramChatId] = useState('');
   const [smsNumber, setSmsNumber] = useState('');
@@ -32,27 +26,33 @@ export function NotificationSettings() {
     loadProfile();
   }, []);
 
+  const canSendTest = useMemo(() => {
+    if (!notificationsEnabled) return false;
+    return Boolean(emailAddress || smsNumber || whatsappNumber || telegramChatId);
+  }, [notificationsEnabled, emailAddress, smsNumber, whatsappNumber, telegramChatId]);
+
   const loadProfile = async () => {
     try {
+      setError(null);
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data, error } = await supabase
+      const { data, error: profileError } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', user.id)
         .single();
 
-      if (data) {
-        setProfile(data);
-        setWhatsappNumber(data.whatsapp_number || '');
-        setTelegramChatId(data.telegram_chat_id || '');
-        setSmsNumber(data.sms_number || '');
-        setEmailAddress(data.email_address || user.email || '');
-        setNotificationsEnabled(data.notifications_enabled);
-      }
-    } catch (error) {
-      console.error('Error loading profile:', error);
+      if (profileError) throw profileError;
+      if (!data) return;
+
+      setWhatsappNumber(data.whatsapp_number || '');
+      setTelegramChatId(data.telegram_chat_id || '');
+      setSmsNumber(data.sms_number || '');
+      setEmailAddress(data.email_address || user.email || '');
+      setNotificationsEnabled(Boolean(data.notifications_enabled));
+    } catch (err) {
+      setError('No se pudieron cargar tus ajustes de notificaciones.');
     } finally {
       setLoading(false);
     }
@@ -60,14 +60,16 @@ export function NotificationSettings() {
 
   const handleSave = async () => {
     setSaving(true);
+    setError(null);
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        Alert.alert('Error', 'Debes iniciar sesión');
+        setError('Debes iniciar sesión para guardar la configuración.');
         return;
       }
 
       const updates = {
+        id: user.id,
         whatsapp_number: whatsappNumber || null,
         telegram_chat_id: telegramChatId || null,
         sms_number: smsNumber || null,
@@ -76,21 +78,19 @@ export function NotificationSettings() {
         updated_at: new Date().toISOString(),
       };
 
-      const { error } = await supabase
-        .from('profiles')
-        .upsert({ id: user.id, ...updates });
+      const { error: upsertError } = await supabase.from('profiles').upsert(updates);
+      if (upsertError) throw upsertError;
 
-      if (error) throw error;
-
-      Alert.alert('Éxito', 'Datos de contacto guardados');
-    } catch (error) {
-      Alert.alert('Error', 'No se pudo guardar');
+      showToast('Ajustes guardados correctamente', 'success');
+    } catch (err) {
+      setError('No se pudieron guardar los ajustes. Inténtalo de nuevo.');
     } finally {
       setSaving(false);
     }
   };
 
   const sendTestNotification = async () => {
+    setError(null);
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
@@ -98,21 +98,14 @@ export function NotificationSettings() {
       const response = await fetch('/api/send-notification', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: user.id,
-          type: 'test',
-        }),
+        body: JSON.stringify({ userId: user.id, type: 'test' }),
       });
-
       const result = await response.json();
+      if (!result.success) throw new Error(result.error || 'Error al enviar');
 
-      if (result.success) {
-        Alert.alert('Éxito', 'Notificación de prueba enviada');
-      } else {
-        Alert.alert('Error', result.error || 'No se pudo enviar');
-      }
-    } catch (error) {
-      Alert.alert('Error', 'Error al enviar notificación');
+      showToast('Aviso de prueba enviado', 'success');
+    } catch (err) {
+      setError('No se pudo enviar la notificación de prueba.');
     }
   };
 
@@ -125,143 +118,43 @@ export function NotificationSettings() {
   }
 
   return (
-    <Card variant="default">
-      <Text style={[styles.title, { color: isWeb ? AIRBNB.carbon : '#000000' }]}>Datos de contacto</Text>
-      <Text style={[styles.subtitle, { color: isWeb ? AIRBNB.slate : '#666666' }]}>
-        Guarda tus datos para recibir avisos por el canal que elijas en cada renovación.
+    <Card variant="form">
+      <Text style={[styles.title, { color: colors.textPrimary }]}>Canales de aviso</Text>
+      <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+        Activa recordatorios y define los datos de contacto que quieres usar.
       </Text>
 
-      <View style={styles.section}>
-        <View style={styles.rowBetween}>
-          <Text style={[styles.label, { color: isWeb ? AIRBNB.carbon : '#3C3C43' }]}>
-            Activar notificaciones
-          </Text>
-          <TouchableOpacity
-            style={[
-              styles.toggle,
-              notificationsEnabled && { backgroundColor: '#34C759' },
-            ]}
-            onPress={() => setNotificationsEnabled(!notificationsEnabled)}
-          >
-            <View
-              style={[
-                styles.toggleKnob,
-                notificationsEnabled && styles.toggleKnobActive,
-              ]}
-            />
-          </TouchableOpacity>
-        </View>
+      {error ? <InlineBanner kind="error" message={error} /> : null}
+
+      <View style={[styles.switchRow, { marginBottom: spacing.lg }]}>
+        <Text style={[styles.switchLabel, { color: colors.textPrimary }]}>Recibir recordatorios</Text>
+        <Switch value={notificationsEnabled} onValueChange={setNotificationsEnabled} />
       </View>
 
-      <View style={styles.section}>
-        <Text style={[styles.label, { color: isWeb ? AIRBNB.slate : '#666666' }]}>
-          Email
-        </Text>
-        <TextInput
-          style={[
-            styles.input,
-            {
-              backgroundColor: isWeb ? AIRBNB.card : '#F2F2F7',
-              color: isWeb ? AIRBNB.carbon : '#000000',
-              borderColor: isWeb ? AIRBNB.mist : 'transparent',
-              borderWidth: isWeb ? 1 : 0,
-            },
-          ]}
-          placeholder="tu@email.com"
-          placeholderTextColor={isWeb ? AIRBNB.slate : '#8E8E93'}
+      <Field label="Email" hint="Canal recomendado para avisos estándar.">
+        <Input
           value={emailAddress}
           onChangeText={setEmailAddress}
+          placeholder="tu@email.com"
           keyboardType="email-address"
-          autoCapitalize="none"
         />
-      </View>
+      </Field>
 
-      <View style={styles.section}>
-        <Text style={[styles.label, { color: isWeb ? AIRBNB.slate : '#666666' }]}>
-          Teléfono SMS (con código de país)
-        </Text>
-        <TextInput
-          style={[
-            styles.input,
-            {
-              backgroundColor: isWeb ? AIRBNB.card : '#F2F2F7',
-              color: isWeb ? AIRBNB.carbon : '#000000',
-              borderColor: isWeb ? AIRBNB.mist : 'transparent',
-              borderWidth: isWeb ? 1 : 0,
-            },
-          ]}
-          placeholder="Ej: +346****5678"
-          placeholderTextColor={isWeb ? AIRBNB.slate : '#8E8E93'}
-          value={smsNumber}
-          onChangeText={setSmsNumber}
-          keyboardType="phone-pad"
-        />
-      </View>
+      <Field label="Teléfono SMS" hint="Incluye prefijo internacional. Ej: +34600111222">
+        <Input value={smsNumber} onChangeText={setSmsNumber} placeholder="+34600111222" keyboardType="phone-pad" />
+      </Field>
 
-      <View style={styles.section}>
-        <Text style={[styles.label, { color: isWeb ? AIRBNB.slate : '#666666' }]}>
-          WhatsApp (con código de país)
-        </Text>
-        <TextInput
-          style={[
-            styles.input,
-            {
-              backgroundColor: isWeb ? AIRBNB.card : '#F2F2F7',
-              color: isWeb ? AIRBNB.carbon : '#000000',
-              borderColor: isWeb ? AIRBNB.mist : 'transparent',
-              borderWidth: isWeb ? 1 : 0,
-            },
-          ]}
-          placeholder="Ej: +346****5678"
-          placeholderTextColor={isWeb ? AIRBNB.slate : '#8E8E93'}
-          value={whatsappNumber}
-          onChangeText={setWhatsappNumber}
-          keyboardType="phone-pad"
-        />
-        <Text style={[styles.helpText, { color: isWeb ? AIRBNB.slate : '#8E8E93' }]}>
-          Para WhatsApp gratis, obtén tu API key en callmebot.com
-        </Text>
-      </View>
+      <Field label="WhatsApp" hint="Incluye prefijo internacional.">
+        <Input value={whatsappNumber} onChangeText={setWhatsappNumber} placeholder="+34600111222" keyboardType="phone-pad" />
+      </Field>
 
-      <View style={styles.section}>
-        <Text style={[styles.label, { color: isWeb ? AIRBNB.slate : '#666666' }]}>
-          Chat ID de Telegram
-        </Text>
-        <TextInput
-          style={[
-            styles.input,
-            {
-              backgroundColor: isWeb ? AIRBNB.card : '#F2F2F7',
-              color: isWeb ? AIRBNB.carbon : '#000000',
-              borderColor: isWeb ? AIRBNB.mist : 'transparent',
-              borderWidth: isWeb ? 1 : 0,
-            },
-          ]}
-          placeholder="Ej: 123456789"
-          placeholderTextColor={isWeb ? AIRBNB.slate : '#8E8E93'}
-          value={telegramChatId}
-          onChangeText={setTelegramChatId}
-        />
-        <Text style={[styles.helpText, { color: isWeb ? AIRBNB.slate : '#8E8E93' }]}>
-          1. Crea un bot con @BotFather{'\n'}
-          2. Escribe al bot{'\n'}
-          3. Obtén tu chat ID desde getUpdates
-        </Text>
-      </View>
+      <Field label="Telegram Chat ID" hint="Ejemplo: 123456789">
+        <Input value={telegramChatId} onChangeText={setTelegramChatId} placeholder="123456789" />
+      </Field>
 
-      <View style={styles.buttonContainer}>
-        <Button
-          title="Guardar datos de contacto"
-          onPress={handleSave}
-          loading={saving}
-        />
-        <View style={{ height: 12 }} />
-        <Button
-          title="Enviar notificación de prueba"
-          variant="secondary"
-          onPress={sendTestNotification}
-        />
-      </View>
+      <Button title="Guardar ajustes" onPress={handleSave} loading={saving} />
+      <View style={{ height: 10 }} />
+      <Button title="Probar aviso" variant="secondary" onPress={sendTestNotification} disabled={!canSendTest} />
     </Card>
   );
 }
@@ -269,59 +162,21 @@ export function NotificationSettings() {
 const styles = StyleSheet.create({
   title: {
     fontSize: 20,
-    fontWeight: '600',
+    fontWeight: '700',
     marginBottom: 4,
   },
   subtitle: {
     fontSize: 13,
-    marginBottom: 20,
-  },
-  section: {
+    lineHeight: 18,
     marginBottom: 16,
   },
-  rowBetween: {
+  switchRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'space-between',
   },
-  label: {
-    fontSize: 14,
-    fontWeight: '500',
-    marginBottom: 8,
-  },
-  toggle: {
-    width: 50,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: isWeb ? '#dddddd' : '#E5E5EA',
-    padding: 2,
-  },
-  toggleKnob: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    backgroundColor: '#FFFFFF',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  toggleKnobActive: {
-    transform: [{ translateX: 20 }],
-  },
-  input: {
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    borderRadius: isWeb ? 14 : 8,
-    fontSize: 16,
-  },
-  helpText: {
-    fontSize: 12,
-    marginTop: 8,
-    lineHeight: 18,
-  },
-  buttonContainer: {
-    marginTop: 8,
+  switchLabel: {
+    fontSize: 15,
+    fontWeight: '600',
   },
 });

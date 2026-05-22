@@ -1,6 +1,6 @@
 import React from 'react';
 import { TouchableOpacity, Text, StyleSheet, ActivityIndicator, Platform } from 'react-native';
-import { AIRBNB } from '@/constants/airbnb-colors';
+import { useSemanticTheme } from '@/constants/design-tokens';
 
 interface ButtonProps {
   title: string;
@@ -16,28 +16,29 @@ interface ButtonProps {
 const isWeb = Platform.OS === 'web';
 
 export function Button({ title, onPress, variant = 'primary', disabled, loading, size = 'md', style, textStyle }: ButtonProps) {
+  const { colors, radius } = useSemanticTheme();
   const getBackgroundColor = () => {
-    if (disabled || loading) return isWeb ? AIRBNB.canvas : '#C7C7CC';
-    if (variant === 'primary') return isWeb ? AIRBNB.coral : '#007AFF';
-    if (variant === 'danger') return isWeb ? 'transparent' : '#FF3B30';
+    if (disabled || loading) return colors.bgCanvas;
+    if (variant === 'primary') return colors.accentPrimary;
+    if (variant === 'danger') return isWeb ? 'transparent' : colors.statusDanger;
     if (variant === 'ghost') return 'transparent';
     return 'transparent';
   };
 
   const getTextColor = () => {
-    if (disabled || loading) return isWeb ? AIRBNB.silver : '#FFFFFF';
+    if (disabled || loading) return colors.textMuted;
     if (variant === 'primary') return '#FFFFFF';
-    if (variant === 'danger') return isWeb ? AIRBNB.coral : '#FFFFFF';
-    if (variant === 'ghost') return isWeb ? AIRBNB.carbon : '#007AFF';
-    return isWeb ? AIRBNB.carbon : '#007AFF';
+    if (variant === 'danger') return isWeb ? colors.statusDanger : '#FFFFFF';
+    if (variant === 'ghost') return colors.accentPrimary;
+    return colors.textPrimary;
   };
 
   const getBorderColor = () => {
-    if (disabled || loading) return isWeb ? AIRBNB.mist : 'transparent';
+    if (disabled || loading) return colors.borderSubtle;
     if (variant === 'primary') return 'transparent';
-    if (variant === 'danger') return isWeb ? AIRBNB.coral : 'transparent';
+    if (variant === 'danger') return isWeb ? colors.statusDanger : 'transparent';
     if (variant === 'ghost') return 'transparent';
-    return isWeb ? AIRBNB.carbon : '#007AFF';
+    return colors.borderStrong;
   };
 
   const sizeStyles = {
@@ -53,7 +54,7 @@ export function Button({ title, onPress, variant = 'primary', disabled, loading,
         {
           backgroundColor: getBackgroundColor(),
           borderColor: getBorderColor(),
-          borderRadius: isWeb ? 8 : 10,
+          borderRadius: radius.md,
           paddingVertical: sizeStyles[size].paddingVertical,
           paddingHorizontal: sizeStyles[size].paddingHorizontal,
         },

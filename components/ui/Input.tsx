@@ -1,7 +1,6 @@
 import React from 'react';
-import { TextInput, StyleSheet, Text, View, ViewStyle, Platform } from 'react-native';
-import { useThemeColor } from '@/hooks/use-theme-color';
-import { AIRBNB } from '@/constants/airbnb-colors';
+import { TextInput, StyleSheet, Text, View, ViewStyle } from 'react-native';
+import { useSemanticTheme } from '@/constants/design-tokens';
 
 interface InputProps {
   label?: string;
@@ -16,8 +15,6 @@ interface InputProps {
   error?: string;
 }
 
-const isWeb = Platform.OS === 'web';
-
 export function Input({
   label,
   placeholder,
@@ -30,17 +27,12 @@ export function Input({
   style,
   error,
 }: InputProps) {
-  const themeBackgroundColor = useThemeColor({ light: '#F2F2F7', dark: '#2C2C2E' }, 'background');
-  const backgroundColor = isWeb ? AIRBNB.card : themeBackgroundColor;
-  const themeTextColor = useThemeColor({ light: '#000000', dark: '#FFFFFF' }, 'text');
-  const textColor = isWeb ? AIRBNB.carbon : themeTextColor;
-  const themePlaceholderColor = useThemeColor({ light: '#8E8E93', dark: '#8E8E93' }, 'text');
-  const placeholderColor = isWeb ? AIRBNB.slate : themePlaceholderColor;
+  const { colors, radius } = useSemanticTheme();
 
   return (
     <View style={style}>
       {label && (
-        <Text style={[styles.label, { color: isWeb ? AIRBNB.carbon : '#3C3C43' }]}>
+        <Text style={[styles.label, { color: colors.textPrimary }]}>
           {label}
         </Text>
       )}
@@ -48,22 +40,16 @@ export function Input({
         style={[
           styles.input,
           {
-            backgroundColor,
-            color: textColor,
-            borderColor: isWeb
-              ? error
-                ? 'rgba(255, 69, 58, 0.5)'
-                : AIRBNB.mist
-              : error
-              ? '#FF3B30'
-              : 'transparent',
-            borderWidth: isWeb ? 1 : error ? 1 : 0,
-            borderRadius: isWeb ? 14 : 8,
+            backgroundColor: colors.bgSurface,
+            color: colors.textPrimary,
+            borderColor: error ? colors.statusDanger : colors.borderSubtle,
+            borderWidth: 1,
+            borderRadius: radius.lg,
           },
           multiline && { height: numberOfLines ? numberOfLines * 24 : 100, textAlignVertical: 'top' },
         ]}
         placeholder={placeholder}
-        placeholderTextColor={placeholderColor}
+        placeholderTextColor={colors.textMuted}
         value={value}
         onChangeText={onChangeText}
         keyboardType={keyboardType}
@@ -71,7 +57,7 @@ export function Input({
         multiline={multiline}
         numberOfLines={numberOfLines}
       />
-      {error && <Text style={[styles.errorText, { color: isWeb ? '#FF453A' : '#FF3B30' }]}>{error}</Text>}
+      {error && <Text style={[styles.errorText, { color: colors.statusDanger }]}>{error}</Text>}
     </View>
   );
 }
