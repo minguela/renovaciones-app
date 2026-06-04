@@ -9,6 +9,7 @@ import '@/theme.css';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { FontLoader } from '@/components/FontLoader';
+import { WebMetaTags } from '@/components/WebMetaTags';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/hooks/useAuth';
 import { ToastProvider } from '@/components/ui/ToastContext';
@@ -74,6 +75,7 @@ export default function RootLayout() {
   return (
     <ToastProvider>
       <FontLoader />
+      <WebMetaTags />
       <ThemeProvider value={activeTheme}>
         <Stack>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />

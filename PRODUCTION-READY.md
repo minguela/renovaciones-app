@@ -75,6 +75,24 @@ vercel --prod
   "cleanUrls": true,
   "rewrites": [
     { "source": "/renewal/:id", "destination": "/renewal/[id].html" }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Frame-Options", "value": "DENY" },
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
+        { "key": "Permissions-Policy", "value": "camera=(), microphone=(), geolocation=(), payment=()" },
+        { "key": "Content-Security-Policy", "value": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self' https://*.supabase.co https://api.resend.com https://api.callmebot.com https://api.telegram.org; font-src 'self' data:; manifest-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self';" }
+      ]
+    },
+    {
+      "source": "/assets/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+      ]
+    }
   ]
 }
 ```
@@ -162,3 +180,14 @@ Rollback más rápido: ir al dashboard de Vercel y hacer "Redeploy" del deploy a
 - [ ] Configurar Uptime-Kuma monitor para renovaciones.dminguela.es
 - [ ] Ejecutar E2E tests en CI: `npm run test:e2e`
 - [ ] Test con imagen real de menú si se integra OCR (no aplica actualmente)
+- [ ] Reemplazar iconos genéricos de Expo con branding propio (ver `TECH-DEBT.md`)
+- [ ] Generar sitemap.xml para SEO completo
+- [ ] Revisar dominio canónico en `WebMetaTags.tsx` si cambia el dominio de producción
+
+## Seguridad & SEO (Aplicado 2026-05-22)
+
+- `vercel.json` ahora incluye headers de seguridad (CSP, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy).
+- Cache de assets de 1 año para `/assets/*`.
+- Componente `WebMetaTags` inyecta meta tags OG/Twitter/canonical en web.
+- `robots.txt` presente en `public/robots.txt`.
+- Ver `TECH-DEBT.md` para estado detallado de assets y deuda técnica.
