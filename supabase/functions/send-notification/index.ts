@@ -16,6 +16,11 @@ interface Payload {
   renewal: Renewal
 }
 
+function isAuthorized(req: Request) {
+  const expected = Deno.env.get('NOTIFICATION_FUNCTION_SECRET')
+  return Boolean(expected && req.headers.get('x-notification-secret') === expected)
+}
+
 /* ---------- Theme tokens (sync with theme.css / constants/theme.ts) ---------- */
 const EMAIL_THEME = {
   carbon: '#222222',
@@ -193,6 +198,10 @@ async function sendWhatsApp(to: string, renewal: Renewal) {
 
 /* ---------- Handler ---------- */
 serve(async (req) => {
+  if (!isAuthorized(req)) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 })
+  }
+
   const payload: Payload = await req.json()
   const { channel, to, renewal } = payload
 
@@ -209,6 +218,6 @@ serve(async (req) => {
     }
     return new Response(JSON.stringify({ success: true, channel, result }), { status: 200 })
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message, channel }), { status: 500 })
+    return new Response(JSON.stringify({ error: 'Notification send failed', channel }), { status: 500 })
   }
 })

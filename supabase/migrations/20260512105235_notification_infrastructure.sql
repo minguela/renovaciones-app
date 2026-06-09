@@ -50,12 +50,20 @@ CREATE TABLE IF NOT EXISTS app_config (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Insert VAPID keys
+ALTER TABLE app_config ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Anyone can read public app config" ON app_config;
+CREATE POLICY "Anyone can read public app config"
+  ON app_config FOR SELECT
+  USING (key IN ('vapid_public_key'));
+
+-- Insert public VAPID key only. Keep private VAPID material in deployment secrets.
 INSERT INTO app_config (key, value)
 VALUES
-  ('vapid_public_key', '-H2CxCHnxbYyozeMa0SUu4hYj8MJCu_PaPepR4cuafg'),
-  ('vapid_private_key', 'iWRyHOyIjH2mfQYXepYDk6sIY1b5V2dvzzjMjfEVMDI')
+  ('vapid_public_key', '-H2CxCHnxbYyozeMa0SUu4hYj8MJCu_PaPepR4cuafg')
 ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;
+
+DELETE FROM app_config WHERE key = 'vapid_private_key';
 
 -- Enable realtime
 ALTER TABLE push_tokens REPLICA IDENTITY FULL;

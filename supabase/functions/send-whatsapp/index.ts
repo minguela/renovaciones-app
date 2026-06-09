@@ -1,6 +1,15 @@
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 
+function isAuthorized(req: Request) {
+  const expected = Deno.env.get('NOTIFICATION_FUNCTION_SECRET')
+  return Boolean(expected && req.headers.get('x-notification-secret') === expected)
+}
+
 serve(async (req) => {
+  if (!isAuthorized(req)) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 })
+  }
+
   const { to, body, templateName, languageCode } = await req.json()
   const WHATSAPP_ACCESS_TOKEN = Deno.env.get('WHATSAPP_ACCESS_TOKEN')
   const WHATSAPP_PHONE_NUMBER_ID = Deno.env.get('WHATSAPP_PHONE_NUMBER_ID')
@@ -41,6 +50,6 @@ serve(async (req) => {
 
     return new Response(JSON.stringify({ success: true, messageId: data.messages?.[0]?.id }), { status: 200 })
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), { status: 500 })
+    return new Response(JSON.stringify({ error: 'WhatsApp send failed' }), { status: 500 })
   }
 })

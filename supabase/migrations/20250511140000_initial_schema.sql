@@ -125,7 +125,7 @@ BEGIN
   ON CONFLICT (id) DO NOTHING;
   RETURN new;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 -- Trigger to create profile on signup
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
@@ -173,8 +173,18 @@ ALTER TABLE renewals REPLICA IDENTITY FULL;
 ALTER TABLE renewal_history REPLICA IDENTITY FULL;
 
 -- Storage bucket for attachments
--- Note: create the 'attachments' bucket manually in Supabase Dashboard > Storage
--- Then run these policies:
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES (
+  'attachments',
+  'attachments',
+  false,
+  10485760,
+  ARRAY['application/pdf', 'image/jpeg', 'image/png', 'image/gif', 'image/webp']
+)
+ON CONFLICT (id) DO UPDATE SET
+  public = false,
+  file_size_limit = EXCLUDED.file_size_limit,
+  allowed_mime_types = EXCLUDED.allowed_mime_types;
 
 DROP POLICY IF EXISTS "Users can upload own attachments" ON storage.objects;
 CREATE POLICY "Users can upload own attachments"

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -33,7 +33,26 @@ export function AttachmentsUploader({
 }: AttachmentsUploaderProps) {
   const [uploading, setUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
+  const [signedUrls, setSignedUrls] = useState<Record<string, string>>({});
   const inputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadSignedUrls() {
+      const entries = await Promise.all(
+        attachments.map(async (path) => [path, await getAttachmentUrl(path)] as const)
+      );
+      if (!cancelled) {
+        setSignedUrls(Object.fromEntries(entries));
+      }
+    }
+
+    loadSignedUrls();
+    return () => {
+      cancelled = true;
+    };
+  }, [attachments]);
 
   const handleFile = async (file: File | Blob, fileName: string) => {
     setUploading(true);
@@ -217,7 +236,7 @@ export function AttachmentsUploader({
       {attachments.length > 0 && (
         <ScrollView style={styles.list} showsVerticalScrollIndicator={false}>
           {attachments.map((path) => {
-            const url = getAttachmentUrl(path);
+            const url = signedUrls[path] || '';
             const fileName = getFileName(path);
             const imageFile = isImage(path);
             const pdfFile = isPdf(path);

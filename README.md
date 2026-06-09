@@ -39,12 +39,14 @@ Edita `.env`:
 ```
 EXPO_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 EXPO_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
-SUPABASE_SERVICE_KEY=your-service-role-key
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 
 # Para notificaciones (opcional)
 CALLMEBOT_API_KEY=your-key
 TELEGRAM_BOT_TOKEN=your-bot-token
 RESEND_API_KEY=your-key
+NOTIFICATION_FUNCTION_SECRET=long-random-internal-secret
 ```
 
 ### 3. Instalar dependencias

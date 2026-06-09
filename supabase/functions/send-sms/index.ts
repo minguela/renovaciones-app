@@ -1,6 +1,15 @@
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 
+function isAuthorized(req: Request) {
+  const expected = Deno.env.get('NOTIFICATION_FUNCTION_SECRET')
+  return Boolean(expected && req.headers.get('x-notification-secret') === expected)
+}
+
 serve(async (req) => {
+  if (!isAuthorized(req)) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 })
+  }
+
   const { to, body } = await req.json()
   const TWILIO_ACCOUNT_SID = Deno.env.get('TWILIO_ACCOUNT_SID')
   const TWILIO_AUTH_TOKEN = Deno.env.get('TWILIO_AUTH_TOKEN')
@@ -30,6 +39,6 @@ serve(async (req) => {
 
     return new Response(JSON.stringify({ success: true, sid: data.sid }), { status: 200 })
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), { status: 500 })
+    return new Response(JSON.stringify({ error: 'SMS send failed' }), { status: 500 })
   }
 })

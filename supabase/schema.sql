@@ -131,7 +131,7 @@ BEGIN
   ON CONFLICT (id) DO NOTHING;
   RETURN new;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 -- Trigger to create profile on signup
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
@@ -224,8 +224,18 @@ CREATE TRIGGER user_catalogs_updated_at
 ALTER TABLE user_catalogs REPLICA IDENTITY FULL;
 
 -- Storage bucket for attachments
--- Note: create the 'attachments' bucket manually in Supabase Dashboard > Storage
--- Then run these policies:
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES (
+  'attachments',
+  'attachments',
+  false,
+  10485760,
+  ARRAY['application/pdf', 'image/jpeg', 'image/png', 'image/gif', 'image/webp']
+)
+ON CONFLICT (id) DO UPDATE SET
+  public = false,
+  file_size_limit = EXCLUDED.file_size_limit,
+  allowed_mime_types = EXCLUDED.allowed_mime_types;
 
 DROP POLICY IF EXISTS "Users can upload own attachments" ON storage.objects;
 CREATE POLICY "Users can upload own attachments"
@@ -307,6 +317,13 @@ CREATE TABLE IF NOT EXISTS app_config (
   value TEXT NOT NULL,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+ALTER TABLE app_config ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Anyone can read public app config" ON app_config;
+CREATE POLICY "Anyone can read public app config"
+  ON app_config FOR SELECT
+  USING (key IN ('vapid_public_key'));
 
 -- Enable realtime for notifications
 ALTER TABLE push_tokens REPLICA IDENTITY FULL;

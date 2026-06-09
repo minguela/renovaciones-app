@@ -277,12 +277,17 @@ export async function uploadAttachment(userId: string, renewalId: string, file: 
   return { data, error: null };
 }
 
-export function getAttachmentUrl(path: string) {
-  const { data } = supabase.storage
+export async function getAttachmentUrl(path: string) {
+  const { data, error } = await supabase.storage
     .from(ATTACHMENTS_BUCKET)
-    .getPublicUrl(path);
+    .createSignedUrl(path, 60 * 60);
 
-  return data?.publicUrl || '';
+  if (error) {
+    console.error('Error creating attachment URL:', error);
+    return '';
+  }
+
+  return data?.signedUrl || '';
 }
 
 export async function deleteAttachment(path: string) {

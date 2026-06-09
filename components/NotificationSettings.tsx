@@ -94,11 +94,19 @@ export function NotificationSettings() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        setError('Debes iniciar sesión para enviar una prueba.');
+        return;
+      }
 
       const response = await fetch('/api/send-notification', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user.id, type: 'test' }),
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ type: 'test' }),
       });
       const result = await response.json();
       if (!result.success) throw new Error(result.error || 'Error al enviar');

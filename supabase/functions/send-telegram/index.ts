@@ -1,6 +1,15 @@
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 
+function isAuthorized(req: Request) {
+  const expected = Deno.env.get('NOTIFICATION_FUNCTION_SECRET')
+  return Boolean(expected && req.headers.get('x-notification-secret') === expected)
+}
+
 serve(async (req) => {
+  if (!isAuthorized(req)) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 })
+  }
+
   const { chatId, text, parseMode } = await req.json()
   const TELEGRAM_BOT_TOKEN = Deno.env.get('TELEGRAM_BOT_TOKEN')
 
@@ -24,6 +33,6 @@ serve(async (req) => {
 
     return new Response(JSON.stringify({ success: true, messageId: data.result.message_id }), { status: 200 })
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), { status: 500 })
+    return new Response(JSON.stringify({ error: 'Telegram send failed' }), { status: 500 })
   }
 })

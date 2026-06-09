@@ -10,7 +10,7 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.tuusuario.renovaciones",
+      "bundleIdentifier": "com.minguela.renovacionesapp",
       "infoPlist": {
         "UIBackgroundModes": [
           "remote-notification",

@@ -9,11 +9,34 @@ import { sendEmail, createRenewalReminderEmail } from '../lib/notifications/emai
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 const SUPABASE_URL = process.env.SUPABASE_URL || '';
 
+function getBearerToken(req: any): string | null {
+  const header = req.headers?.authorization || req.headers?.Authorization;
+  if (typeof header !== 'string') return null;
+  const match = header.match(/^Bearer\s+(.+)$/i);
+  return match?.[1] || null;
+}
+
+async function getAuthenticatedUserId(req: any): Promise<string | null> {
+  const token = getBearerToken(req);
+  if (!token || !SUPABASE_URL) return null;
+
+  const userRes = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+    headers: {
+      apikey: SUPABASE_SERVICE_KEY,
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!userRes.ok) return null;
+  const user = await userRes.json();
+  return typeof user?.id === 'string' ? user.id : null;
+}
+
 export default async function handler(req: any, res: any) {
   // CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
@@ -24,7 +47,16 @@ export default async function handler(req: any, res: any) {
   }
 
   try {
-    const { userId, type, renewalId } = req.body;
+    if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
+      return res.status(500).json({ success: false, error: 'Server not configured' });
+    }
+
+    const userId = await getAuthenticatedUserId(req);
+    if (!userId) {
+      return res.status(401).json({ success: false, error: 'Unauthorized' });
+    }
+
+    const { type, renewalId } = req.body;
 
     // Fetch user profile
     const profileRes = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${userId}&select=*`, {
@@ -68,14 +100,7 @@ export default async function handler(req: any, res: any) {
           break;
 
         case 'email':
-          const userRes = await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${userId}&select=email`, {
-            headers: {
-              apikey: SUPABASE_SERVICE_KEY,
-              Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
-            },
-          });
-          const users = await userRes.json();
-          const email = users[0]?.email;
+          const email = profile.email_address || profile.email;
           
           if (email) {
             const result = await sendEmail({
@@ -96,7 +121,7 @@ export default async function handler(req: any, res: any) {
     if (type === 'reminder' && renewalId) {
       // Fetch renewal details
       const renewalRes = await fetch(
-        `${SUPABASE_URL}/rest/v1/renewals?id=eq.${renewalId}&select=*`,
+        `${SUPABASE_URL}/rest/v1/renewals?id=eq.${renewalId}&user_id=eq.${userId}&select=*`,
         {
           headers: {
             apikey: SUPABASE_SERVICE_KEY,
@@ -163,14 +188,7 @@ export default async function handler(req: any, res: any) {
           break;
 
         case 'email':
-          const userRes = await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${userId}&select=email`, {
-            headers: {
-              apikey: SUPABASE_SERVICE_KEY,
-              Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
-            },
-          });
-          const users = await userRes.json();
-          const email = users[0]?.email;
+          const email = profile.email_address || profile.email;
 
           if (email) {
             const html = createRenewalReminderEmail(
@@ -196,7 +214,7 @@ export default async function handler(req: any, res: any) {
     console.error('Notification error:', error);
     return res.status(500).json({
       success: false,
-      error: error instanceof Error ? error.message : 'Internal server error',
+      error: 'Internal server error',
     });
   }
 }
