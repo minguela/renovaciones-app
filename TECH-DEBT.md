@@ -1,6 +1,6 @@
 # Tech Debt & Assets Status — RenovacionesApp
 
-**Fecha**: 2026-05-22
+**Fecha**: 2026-07-15 (actualizado)
 **Objetivo**: Documentar deuda técnica, estado de assets visuales, y tareas pendientes de seguridad/SEO.
 
 ---
@@ -25,20 +25,18 @@
 
 | Archivo | Tamaño | Estado | Nota |
 |---------|--------|--------|------|
-| `icon.png` | 393 KB | ⚠️ GENÉRICO | Parece ser el icono por defecto de Expo (logo azul). **Necesita reemplazo** con branding propio. |
-| `favicon.png` | 1.1 KB | ⚠️ GENÉRICO | Muy pequeño, probablemente el favicon por defecto de Expo. **Necesita reemplazo**. |
-| `splash-icon.png` | 17.5 KB | ⚠️ GENÉRICO | Icono de splash por defecto de Expo. **Necesita reemplazo**. |
-| `notification-icon.png` | — | ⚠️ NO ENCONTRADO | Referenciado en `app.json` pero no listado en `assets/images/`. Verificar que existe o crearlo. |
-| `android-icon-foreground.png` | 79 KB | ⚠️ PROBABLEMENTE GENÉRICO | Revisar si coincide con branding propio. |
-| `android-icon-background.png` | 17.5 KB | ⚠️ PROBABLEMENTE GENÉRICO | Revisar si coincide con branding propio. |
-| `android-icon-monochrome.png` | 4.1 KB | ⚠️ PROBABLEMENTE GENÉRICO | Revisar si coincide con branding propio. |
-| `partial-react-logo.png` | — | 🗑️ BASURA | Archivo de plantilla Expo, puede eliminarse. |
-| `react-logo.png` / `@2x` / `@3x` | — | 🗑️ BASURA | Archivos de plantilla Expo, pueden eliminarse. |
+| `icon.png` | 32 KB | ✅ PERSONALIZADO | Icono naranja/degradado con símbolo refresh. Actualizado 2026-06-04. |
+| `favicon.png` | 1.2 KB | ✅ PERSONALIZADO | Mismo diseño que icon.png. |
+| `splash-icon.png` | 32 KB | ✅ PERSONALIZADO | Mismo diseño. |
+| `notification-icon.png` | 8 KB | ✅ PRESENTE | Icono de notificación personalizado. |
+| `android-icon-foreground.png` | 79 KB | ⚠️ POR REVISAR | Verificar si coincide con branding propio. |
+| `android-icon-background.png` | 17 KB | ⚠️ POR REVISAR | Verificar si coincide con branding propio. |
+| `android-icon-monochrome.png` | 4 KB | ⚠️ POR REVISAR | Verificar si coincide con branding propio. |
+| `partial-react-logo.png` | — | 🗑️ ELIMINADO | Limpiado 2026-07-15. |
+| `react-logo.png` / `@2x` / `@3x` | — | 🗑️ ELIMINADOS | Limpiados 2026-07-15. |
 
-**Acción recomendada (Fase 3)**:
-- Generar iconos propios (1024×1024 para `icon.png`, 512×512 para splash, 32×32 o 48×48 para favicon, 96×96 para notificaciones).
-- Alinear colores con la paleta Airbnb Clean (`#FF385C`, `#00A699`, `#007AFF`, `#FFB400`, `#FFFFFF`).
-- Eliminar `partial-react-logo.png` y `react-logo*.png` una vez reemplazados.
+**Acción recomendada**:
+- Los iconos principales ya están personalizados con branding propio (naranja degradado + símbolo refresh). ✅
 
 ---
 
@@ -64,19 +62,20 @@
 | Meta tags dinámicos (web) | ✅ AÑADIDO | `components/WebMetaTags.tsx` |
 | Inyección en layout raíz | ✅ AÑADIDO | `app/_layout.tsx` importa `<WebMetaTags />` |
 | `robots.txt` | ✅ AÑADIDO | `public/robots.txt` |
-| `og:image` | ⚠️ PLACEHOLDER | Apunta a `/assets/images/icon.png` (genérico por ahora) |
-| `canonical` | ✅ AÑADIDO | Apunta a `https://renovaciones.vercel.app` |
+| `og:image` | ✅ ACTUALIZADO | `https://renovaciones.dminguela.es/assets/images/icon.png` |
+| `canonical` | ✅ ACTUALIZADO | Apunta a `https://renovaciones.dminguela.es` |
 | Twitter Cards | ✅ AÑADIDO | `summary_large_image` |
-| Sitemap XML | ❌ PENDIENTE | No generado. Considerar `next-sitemap` o script manual post-build. |
+| Sitemap XML | ✅ GENERADO | `public/sitemap.xml` con rutas principales |
 
-**Nota**: El dominio canónico actual es `https://renovaciones.vercel.app`. Si el dominio real de producción cambia a `https://renovaciones.dminguela.es`, actualizar `components/WebMetaTags.tsx` y `public/robots.txt`.
+**Nota**: Dominio canónico actualizado a `https://renovaciones.dminguela.es`. Actualizado en `WebMetaTags.tsx`, `robots.txt`, `lib/supabase.ts` y `scripts/demo-notifications.js`.
 
 ---
 
 ## 5. Pendientes de Baja Prioridad
 
-- [ ] Reemplazar iconos genéricos de Expo con branding propio (Fase 3).
-- [ ] Generar sitemap.xml (baja prioridad, SPA con rutas estáticas).
-- [ ] Revisar si `notification-icon.png` realmente existe (puede estar en otro directorio).
-- [ ] Considerar nonces en CSP si se deja de usar inline scripts.
+- [x] Reemplazar iconos genéricos de Expo con branding propio — ya están personalizados (2026-06-04).
+- [x] Generar sitemap.xml — generado en `public/sitemap.xml` (2026-07-15).
+- [x] Eliminar assets basura Expo — limpiados (2026-07-15).
+- [x] Actualizar dominio canónico a `renovaciones.dminguela.es` — hecho (2026-07-15).
 - [ ] Configurar Uptime-Kuma monitor para el dominio de producción.
+- [ ] Revisar `getWebRedirectUrl()` en `lib/supabase.ts` — la detección del Vercel URL largo sigue funcionando pero el dominio canónico ya apunta a dminguela.es.

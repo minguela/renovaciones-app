@@ -8,8 +8,8 @@ const supabaseKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || process.env.SUP
 
 export const supabase = createClient(supabaseUrl, supabaseKey);
 
-// URL canonica de produccion; evita redirecciones a URLs largas de Vercel
-const PRODUCTION_URL = 'https://renovaciones-app.vercel.app/';
+// Canonical production URL — updated to custom domain
+const PRODUCTION_URL = 'https://renovaciones.dminguela.es/';
 
 function getWebRedirectUrl(): string {
   if (typeof window === 'undefined') return '';

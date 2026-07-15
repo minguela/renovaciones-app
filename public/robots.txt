@@ -2,4 +2,4 @@ User-agent: *
 Allow: /
 Disallow: /renewal/
 
-Sitemap: https://renovaciones.vercel.app/sitemap.xml
+Sitemap: https://renovaciones.dminguela.es/sitemap.xml

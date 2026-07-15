@@ -18,7 +18,7 @@ const renewal = {
   due_date: '15 de mayo de 2026',
   category: 'Entretenimiento',
   days_remaining: 3,
-  url: 'https://renovaciones-app.vercel.app/renewal/netflix-123',
+  url: 'https://renovaciones.dminguela.es/renewal/netflix-123',
 }
 
 function buildEmail(r) {
@@ -115,7 +115,7 @@ curl -X POST https://grgmuqaigqgrbjvzjecn.supabase.co/functions/v1/send-notifica
       "due_date": "15 de mayo de 2026",
       "category": "Entretenimiento",
       "days_remaining": 3,
-      "url": "https://renovaciones-app.vercel.app"
+      "url": "https://renovaciones.dminguela.es"
     }
   }'
 `)

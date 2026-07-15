@@ -3,7 +3,7 @@ import { Platform } from 'react-native';
 
 const SITE_NAME = 'Renovaciones';
 const SITE_DESCRIPTION = 'Gestiona tus renovaciones y suscripciones de forma inteligente. Recibe avisos antes de que venzan tus servicios.';
-const SITE_URL = 'https://renovaciones.vercel.app';
+const SITE_URL = 'https://renovaciones.dminguela.es';
 const OG_IMAGE = `${SITE_URL}/assets/images/icon.png`;
 
 export function WebMetaTags({ title, description }: { title?: string; description?: string }) {
