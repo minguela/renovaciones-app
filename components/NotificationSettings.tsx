@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/Button';
 import { Field } from '@/components/ui/Field';
 import { Input } from '@/components/ui/Input';
 import { InlineBanner } from '@/components/ui/InlineBanner';
-import { supabase } from '@/lib/supabase';
+import { getCurrentUser, getProfile, updateProfile } from '@/lib/api-client';
 import { useSemanticTheme } from '@/constants/design-tokens';
 import { useToast } from '@/hooks/useToast';
 
@@ -34,16 +34,10 @@ export function NotificationSettings() {
   const loadProfile = async () => {
     try {
       setError(null);
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await getCurrentUser();
       if (!user) return;
 
-      const { data, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single();
-
-      if (profileError) throw profileError;
+      const data = await getProfile();
       if (!data) return;
 
       setWhatsappNumber(data.whatsapp_number || '');
@@ -62,23 +56,21 @@ export function NotificationSettings() {
     setSaving(true);
     setError(null);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await getCurrentUser();
       if (!user) {
         setError('Debes iniciar sesión para guardar la configuración.');
         return;
       }
 
       const updates = {
-        id: user.id,
         whatsapp_number: whatsappNumber || null,
         telegram_chat_id: telegramChatId || null,
         sms_number: smsNumber || null,
         email_address: emailAddress || null,
         notifications_enabled: notificationsEnabled,
-        updated_at: new Date().toISOString(),
       };
 
-      const { error: upsertError } = await supabase.from('profiles').upsert(updates);
+      const { error: upsertError } = await updateProfile(updates);
       if (upsertError) throw upsertError;
 
       showToast('Ajustes guardados correctamente', 'success');
@@ -92,10 +84,10 @@ export function NotificationSettings() {
   const sendTestNotification = async () => {
     setError(null);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await getCurrentUser();
       if (!user) return;
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) {
+      const token = typeof localStorage !== 'undefined' ? localStorage.getItem('auth_token') : null;
+      if (!token) {
         setError('Debes iniciar sesión para enviar una prueba.');
         return;
       }
@@ -104,12 +96,12 @@ export function NotificationSettings() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${session.access_token}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ type: 'test' }),
       });
       const result = await response.json();
-      if (!result.success) throw new Error(result.error || 'Error al enviar');
+      if (response.status >= 400) throw new Error(result.error || 'Error al enviar');
 
       showToast('Aviso de prueba enviado', 'success');
     } catch (err) {

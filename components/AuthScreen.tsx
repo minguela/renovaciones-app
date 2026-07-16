@@ -88,27 +88,8 @@ export function AuthScreen({
           </View>
         ) : null}
 
+{/* Google OAuth button */}
         <View style={[styles.oauthContainer, isWeb && styles.webOAuthContainer]}>
-          <TouchableOpacity
-            style={[
-              styles.oauthButton,
-              styles.appleButton,
-              isWeb && styles.webOAuthButton,
-            ]}
-            onPress={onAppleSignIn}
-            disabled={loading}
-            activeOpacity={0.8}
-          >
-            {loading ? (
-              <ActivityIndicator color="#FFFFFF" />
-            ) : (
-              <>
-                <FontAwesome name="apple" size={20} color="#FFFFFF" style={styles.oauthIcon} />
-                <Text style={[styles.oauthText, styles.appleText]}>Continuar con Apple</Text>
-              </>
-            )}
-          </TouchableOpacity>
-
           <TouchableOpacity
             style={[
               styles.oauthButton,
@@ -135,6 +116,7 @@ export function AuthScreen({
           <Text style={[styles.separatorText, { color: colors.textMuted }]}>o</Text>
           <View style={[styles.separatorLine, { backgroundColor: colors.borderSubtle }]} />
         </View>
+{/* Apple OAuth removed — no credentials */}
 
         <View style={[styles.form, isWeb && styles.webForm]}>
           <View style={styles.inputContainer}>

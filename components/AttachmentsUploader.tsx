@@ -13,7 +13,7 @@ import {
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { uploadAttachment, deleteAttachment, getAttachmentUrl } from '@/lib/supabase';
+import { uploadAttachment, deleteAttachment, getAttachmentUrl } from '@/lib/api-client';
 import { AIRBNB } from '@/constants/airbnb-colors';
 
 const isWeb = Platform.OS === 'web';
@@ -54,17 +54,28 @@ export function AttachmentsUploader({
     };
   }, [attachments]);
 
+  const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB max per file
+  const MAX_ATTACHMENTS = 5;
+
   const handleFile = async (file: File | Blob, fileName: string) => {
+    if (file.size > MAX_FILE_SIZE) {
+      Alert.alert('Archivo demasiado grande', `Máximo 2MB por archivo. Este pesa ${(file.size / 1024 / 1024).toFixed(1)}MB`);
+      return;
+    }
+    if (attachments.length >= MAX_ATTACHMENTS) {
+      Alert.alert('Límite alcanzado', `Máximo ${MAX_ATTACHMENTS} archivos adjuntos`);
+      return;
+    }
     setUploading(true);
     const { data, error } = await uploadAttachment(userId, renewalId, file, fileName);
     setUploading(false);
 
-    if (error || !data?.path) {
+    if (error || !data) {
       Alert.alert('Error', 'No se pudo subir el archivo');
       return;
     }
 
-    onAttachmentsChange([...attachments, data.path]);
+    onAttachmentsChange([...attachments, data]);
   };
 
   const handleWebFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {

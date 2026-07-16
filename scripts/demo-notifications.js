@@ -100,23 +100,5 @@ console.log('\n--- WHATSAPP ---')
 console.log(buildWhatsApp(renewal))
 
 console.log('\n' + '='.repeat(60))
-console.log('Para enviar reales, usa la Edge Function send-notification:')
-console.log(`
-curl -X POST https://grgmuqaigqgrbjvzjecn.supabase.co/functions/v1/send-notification \\
-  -H "Authorization: Bearer <JWT_USUARIO>" \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "channel": "email",
-    "to": "tu@email.com",
-    "renewal": {
-      "service_name": "Netflix",
-      "amount": 12.99,
-      "currency": "EUR",
-      "due_date": "15 de mayo de 2026",
-      "category": "Entretenimiento",
-      "days_remaining": 3,
-      "url": "https://renovaciones.dminguela.es"
-    }
-  }'
-`)
+console.log('Para enviar notificaciones reales, usa el endpoint /api/notifications');
 console.log('='.repeat(60))

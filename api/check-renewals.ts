@@ -1,33 +1,22 @@
 // api/check-renewals.ts
 // Scheduled endpoint — called daily by cron/Uptime-Kuma/n8n
-// Checks all users with notifications enabled and sends reminders
-// for renewals approaching within their configured notification window.
-//
-// GET /api/check-renewals?secret=<NOTIFICATION_FUNCTION_SECRET>
-//
-// This is a serverless function; must be called with the shared secret.
+// Uses Neon PostgreSQL instead of Supabase
 
-const SUPABASE_URL = process.env.SUPABASE_URL || '';
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+import { query } from './db';
+
 const CALLMEBOT_API_KEY = process.env.CALLMEBOT_API_KEY || '';
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
 const RESEND_API_KEY = process.env.RESEND_API_KEY || '';
 const INTERNAL_SECRET = process.env.NOTIFICATION_FUNCTION_SECRET || '';
 
 export default async function handler(req: any, res: any) {
-  // Only GET
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  // Auth via shared secret in query param
   const { secret } = req.query;
   if (!INTERNAL_SECRET || secret !== INTERNAL_SECRET) {
     return res.status(401).json({ error: 'Unauthorized' });
-  }
-
-  if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
-    return res.status(500).json({ error: 'Server not configured — missing Supabase env vars' });
   }
 
   const results: any[] = [];
@@ -35,40 +24,34 @@ export default async function handler(req: any, res: any) {
   const today = now.toISOString().split('T')[0];
 
   try {
-    // 1. Fetch all profiles with notifications enabled
-    const profilesRes = await fetch(
-      `${SUPABASE_URL}/rest/v1/profiles?notifications_enabled=eq.true&select=*`,
-      { headers: { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` } }
+    // Fetch all profiles with notifications enabled
+    const profilesRes = await query(
+      "SELECT p.*, u.email as user_email FROM profiles p JOIN users u ON p.user_id = u.id WHERE p.notifications_enabled = true"
     );
-    const profiles = await profilesRes.json();
+    const profiles = profilesRes.rows;
 
-    if (!Array.isArray(profiles) || profiles.length === 0) {
+    if (!profiles || profiles.length === 0) {
       return res.json({ success: true, checked: 0, sent: 0, message: 'No profiles with notifications enabled' });
     }
 
     let sent = 0;
 
     for (const profile of profiles) {
-      // 2. Fetch active renewals for this user
-      const renewalsRes = await fetch(
-        `${SUPABASE_URL}/rest/v1/renewals?user_id=eq.${profile.id}&select=*`,
-        { headers: { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` } }
+      // Fetch active renewals for this user
+      const renewalsRes = await query(
+        "SELECT * FROM renewals WHERE user_id = $1",
+        [profile.user_id]
       );
-      const renewals = await renewalsRes.json();
-
-      if (!Array.isArray(renewals)) continue;
+      const renewals = renewalsRes.rows;
 
       for (const renewal of renewals) {
-        // Skip if notifications disabled for this renewal
         if (!renewal.notification_enabled) continue;
-        // Skip cancelled
         if (renewal.status === 'cancelled') continue;
 
         const renewalDate = new Date(renewal.renewal_date);
         const daysUntil = Math.ceil((renewalDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
         const notifyBefore = renewal.notification_days_before || 7;
 
-        // Only notify if within the notification window
         if (daysUntil < 0 || daysUntil > notifyBefore) continue;
 
         const cost = `${Number(renewal.cost).toFixed(2)} ${renewal.currency}`;
@@ -81,7 +64,7 @@ export default async function handler(req: any, res: any) {
         try {
           switch (method) {
             case 'email': {
-              const to = profile.email_address || profile.email;
+              const to = profile.email_address || profile.email || profile.user_email;
               if (!to || !RESEND_API_KEY) break;
               const emailRes = await fetch('https://api.resend.com/emails', {
                 method: 'POST',
@@ -113,18 +96,15 @@ export default async function handler(req: any, res: any) {
               break;
             }
             case 'sms':
-              // SMS disabled — would need Twilio or similar
-              break;
             case 'push':
-              // Push handled locally by expo-notifications on device
               break;
           }
         } catch (e: any) {
-          console.error(`Notification error for ${profile.id}/${renewal.id}:`, e.message);
+          console.error(`Notification error for ${profile.user_id}/${renewal.id}:`, e.message);
         }
 
         results.push({
-          userId: profile.id,
+          userId: profile.user_id,
           renewalId: renewal.id,
           renewal: renewal.name,
           channel: method,

@@ -1,17 +1,16 @@
 import { useState, useEffect, useCallback } from 'react';
-import type { User, Session } from '@supabase/supabase-js';
 import {
-  supabase,
-  signIn as sbSignIn,
-  signUp as sbSignUp,
-  signOut as sbSignOut,
-  signInWithGoogle as sbSignInWithGoogle,
-  signInWithApple as sbSignInWithApple,
-} from '@/lib/supabase';
+  signIn as apiSignIn,
+  signUp as apiSignUp,
+  signOut as apiSignOut,
+  signInWithGoogle as apiSignInWithGoogle,
+  getCurrentUser,
+  onAuthStateChange,
+  type User,
+} from '@/lib/api-client';
 
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [authProcessing, setAuthProcessing] = useState(false);
   const [authMessage, setAuthMessage] = useState<string | null>(null);
@@ -20,31 +19,21 @@ export function useAuth() {
   useEffect(() => {
     let mounted = true;
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    getCurrentUser().then((u) => {
       if (!mounted) return;
-      setSession(session);
-      setUser(session?.user ?? null);
+      setUser(u);
       setLoading(false);
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const unsubscribe = onAuthStateChange((u) => {
       if (!mounted) return;
-      setSession(session);
-      setUser(session?.user ?? null);
+      setUser(u);
       setLoading(false);
-
-      if (event === 'SIGNED_IN') {
-        setAuthError(null);
-      }
-      if (event === 'SIGNED_OUT') {
-        setAuthMessage(null);
-        setAuthError(null);
-      }
     });
 
     return () => {
       mounted = false;
-      subscription.unsubscribe();
+      unsubscribe();
     };
   }, []);
 
@@ -53,9 +42,12 @@ export function useAuth() {
     setAuthMessage(null);
     setLoading(true);
     try {
-      const { error } = await sbSignIn(email, password);
+      const { error } = await apiSignIn(email, password);
       if (error) {
         setAuthError(error.message);
+      } else {
+        const u = await getCurrentUser();
+        setUser(u);
       }
     } catch (err: any) {
       setAuthError(err?.message || 'Error al iniciar sesión');
@@ -69,11 +61,13 @@ export function useAuth() {
     setAuthMessage(null);
     setLoading(true);
     try {
-      const { error } = await sbSignUp(email, password);
+      const { error } = await apiSignUp(email, password);
       if (error) {
         setAuthError(error.message);
       } else {
-        setAuthMessage('Revisa tu email para confirmar');
+        setAuthMessage('Cuenta creada correctamente');
+        const u = await getCurrentUser();
+        setUser(u);
       }
     } catch (err: any) {
       setAuthError(err?.message || 'Error al crear la cuenta');
@@ -87,10 +81,8 @@ export function useAuth() {
     setAuthMessage(null);
     setLoading(true);
     try {
-      const { error } = await sbSignOut();
-      if (error) {
-        setAuthError(error.message);
-      }
+      await apiSignOut();
+      setUser(null);
     } catch (err: any) {
       setAuthError(err?.message || 'Error al cerrar sesión');
     } finally {
@@ -99,43 +91,32 @@ export function useAuth() {
   }, []);
 
   const signInWithGoogle = useCallback(async () => {
-    if (authProcessing) return;
     setAuthError(null);
     setAuthMessage(null);
+    setLoading(true);
     setAuthProcessing(true);
     try {
-      const { error } = await sbSignInWithGoogle();
+      const { error } = await apiSignInWithGoogle();
       if (error) {
         setAuthError(error.message);
       }
-      // En web puede redirigir; en nativo continúa aquí
+      // On web, page will redirect — no need to set user
+      // On native, token is stored and user will be picked up by polling
     } catch (err: any) {
       setAuthError(err?.message || 'Error al iniciar sesión con Google');
     } finally {
+      setLoading(false);
       setAuthProcessing(false);
     }
-  }, [authProcessing]);
+  }, []);
 
   const signInWithApple = useCallback(async () => {
-    if (authProcessing) return;
-    setAuthError(null);
-    setAuthMessage(null);
-    setAuthProcessing(true);
-    try {
-      const { error } = await sbSignInWithApple();
-      if (error) {
-        setAuthError(error.message);
-      }
-    } catch (err: any) {
-      setAuthError(err?.message || 'Error al iniciar sesión con Apple');
-    } finally {
-      setAuthProcessing(false);
-    }
-  }, [authProcessing]);
+    setAuthError('Apple Sign-In ya no está disponible. Usa email/contraseña.');
+  }, []);
 
   return {
     user,
-    session,
+    session: user ? { user } : null, // compatibility
     loading,
     authProcessing,
     isAuthenticated: !!user,

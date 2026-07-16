@@ -3,15 +3,23 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
 import { Platform } from 'react-native';
-import { useEffect } from 'react';
-import * as Linking from 'expo-linking';
 import '@/theme.css';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { FontLoader } from '@/components/FontLoader';
 import { WebMetaTags } from '@/components/WebMetaTags';
-import { supabase } from '@/lib/supabase';
+import { setTokenStore, handleOAuthCallback } from '@/lib/api-client';
 import { useAuth } from '@/hooks/useAuth';
+
+// Configure token storage
+if (typeof localStorage !== 'undefined') {
+  setTokenStore({
+    getToken: async () => localStorage.getItem('auth_token'),
+    setToken: async (t) => t ? localStorage.setItem('auth_token', t) : localStorage.removeItem('auth_token'),
+  });
+  // Handle OAuth callback token from URL (Google Sign-In redirect)
+  handleOAuthCallback();
+}
 import { ToastProvider } from '@/components/ui/ToastContext';
 import { ToastContainer } from '@/components/ui/Toast';
 
@@ -23,54 +31,10 @@ export default function RootLayout() {
   const colorScheme = useColorScheme();
   const isWeb = Platform.OS === 'web';
 
-  // Initialize global auth listener
+  // Initialize global auth listener (handles session restore + polling)
   useAuth();
 
   const activeTheme = colorScheme === 'dark' ? DarkTheme : DefaultTheme;
-
-  // Restore session on mount
-  useEffect(() => {
-    supabase.auth.getSession();
-  }, []);
-
-  // Process URL hash on web for OAuth callbacks
-  useEffect(() => {
-    if (isWeb && typeof window !== 'undefined' && window.location.hash) {
-      supabase.auth.getSession();
-    }
-  }, [isWeb]);
-
-  // Listen to deep links for OAuth callbacks on native
-  useEffect(() => {
-    const handleDeepLink = ({ url }: { url: string }) => {
-      if (url) {
-        supabase.auth.getSession();
-      }
-    };
-
-    const subscription = Linking.addEventListener('url', handleDeepLink);
-
-    Linking.getInitialURL().then((url) => {
-      if (url) {
-        supabase.auth.getSession();
-      }
-    });
-
-    return () => subscription.remove();
-  }, []);
-
-  // Listen to auth state changes and clean up URL on sign in
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN' && session?.user) {
-        // Remove OAuth callback hash from URL on web
-        if (isWeb && typeof window !== 'undefined' && window.location.hash) {
-          window.history.replaceState(null, '', window.location.pathname + window.location.search);
-        }
-      }
-    });
-    return () => subscription.unsubscribe();
-  }, [isWeb]);
 
   return (
     <ToastProvider>

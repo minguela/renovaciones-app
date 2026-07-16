@@ -1,6 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
-import type { Renewal, RenewalHistory } from '@/types/renewal';
-import { supabase, getRenewalHistory, addRenewalHistory } from '@/lib/supabase';
+import type { Renewal } from '@/types/renewal';
+import type { RenewalHistory } from '@/types/renewal';
+import {
+  getRenewals as apiGetRenewals,
+  addRenewal as apiAddRenewal,
+  updateRenewal as apiUpdateRenewal,
+  deleteRenewal as apiDeleteRenewal,
+  getRenewalHistory,
+  addRenewalHistory,
+} from '@/lib/api-client';
 
 export function useRenewals(userId?: string | null) {
   const [renewals, setRenewals] = useState<Renewal[]>([]);
@@ -17,41 +25,8 @@ export function useRenewals(userId?: string | null) {
     try {
       setLoading(true);
       setError(null);
-
-      const { data, error: supabaseError } = await supabase
-        .from('renewals')
-        .select('*')
-        .eq('user_id', userId)
-        .order('renewal_date', { ascending: true });
-
-      if (supabaseError) throw supabaseError;
-
-      // Map database fields to app types
-      const mappedRenewals: Renewal[] = (data || []).map(item => ({
-        id: item.id,
-        name: item.name,
-        type: item.type,
-        frequency: item.frequency,
-        cost: item.cost,
-        currency: item.currency,
-        renewalDate: item.renewal_date,
-        provider: item.provider,
-        notes: item.notes,
-        color: item.color,
-        icon: item.icon,
-        createdAt: item.created_at,
-        updatedAt: item.updated_at,
-        notificationEnabled: item.notification_enabled,
-        notificationDaysBefore: item.notification_days_before,
-        status: item.status,
-        paymentMethod: item.payment_method,
-        bankAccount: item.bank_account,
-        tags: item.tags || [],
-        autoRenew: item.auto_renew,
-        contractEndDate: item.contract_end_date,
-      }));
-
-      setRenewals(mappedRenewals);
+      const data = await apiGetRenewals();
+      setRenewals(data);
     } catch (err) {
       setError('Error al cargar las renovaciones');
       console.error(err);
@@ -66,35 +41,9 @@ export function useRenewals(userId?: string | null) {
 
   const addRenewal = useCallback(async (renewal: Renewal) => {
     if (!userId) return false;
-
     try {
-      const { error: supabaseError } = await supabase
-        .from('renewals')
-        .insert([{
-          id: renewal.id,
-          user_id: userId,
-          name: renewal.name,
-          type: renewal.type,
-          frequency: renewal.frequency,
-          cost: renewal.cost,
-          currency: renewal.currency,
-          renewal_date: renewal.renewalDate,
-          provider: renewal.provider,
-          notes: renewal.notes,
-          color: renewal.color,
-          icon: renewal.icon,
-          notification_enabled: renewal.notificationEnabled,
-          notification_days_before: renewal.notificationDaysBefore,
-          status: renewal.status,
-          payment_method: renewal.paymentMethod,
-          bank_account: renewal.bankAccount,
-          tags: renewal.tags,
-          auto_renew: renewal.autoRenew,
-          contract_end_date: renewal.contractEndDate,
-        }]);
-
-      if (supabaseError) throw supabaseError;
-
+      const { error } = await apiAddRenewal(renewal);
+      if (error) throw error;
       await loadRenewals();
       return true;
     } catch (err) {
@@ -106,54 +55,22 @@ export function useRenewals(userId?: string | null) {
 
   const updateRenewal = useCallback(async (renewal: Renewal, previousRenewal?: Renewal) => {
     if (!userId) return false;
-
     try {
-      // If cost or frequency changed, save history
       if (previousRenewal) {
         const costChanged = previousRenewal.cost !== renewal.cost;
         const frequencyChanged = previousRenewal.frequency !== renewal.frequency;
         if (costChanged || frequencyChanged) {
-          const { error: historyError } = await addRenewalHistory({
+          await addRenewalHistory({
             renewalId: renewal.id,
             oldCost: previousRenewal.cost,
             newCost: renewal.cost,
             oldFrequency: previousRenewal.frequency,
             newFrequency: renewal.frequency,
           });
-          if (historyError) {
-            console.error('Error saving renewal history:', historyError);
-          }
         }
       }
-
-      const { error: supabaseError } = await supabase
-        .from('renewals')
-        .update({
-          name: renewal.name,
-          type: renewal.type,
-          frequency: renewal.frequency,
-          cost: renewal.cost,
-          currency: renewal.currency,
-          renewal_date: renewal.renewalDate,
-          provider: renewal.provider,
-          notes: renewal.notes,
-          color: renewal.color,
-          icon: renewal.icon,
-          notification_enabled: renewal.notificationEnabled,
-          notification_days_before: renewal.notificationDaysBefore,
-          status: renewal.status,
-          payment_method: renewal.paymentMethod,
-          bank_account: renewal.bankAccount,
-          tags: renewal.tags,
-          auto_renew: renewal.autoRenew,
-          contract_end_date: renewal.contractEndDate,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', renewal.id)
-        .eq('user_id', userId);
-
-      if (supabaseError) throw supabaseError;
-
+      const { error } = await apiUpdateRenewal(renewal);
+      if (error) throw error;
       await loadRenewals();
       return true;
     } catch (err) {
@@ -165,16 +82,9 @@ export function useRenewals(userId?: string | null) {
 
   const deleteRenewal = useCallback(async (id: string) => {
     if (!userId) return false;
-
     try {
-      const { error: supabaseError } = await supabase
-        .from('renewals')
-        .delete()
-        .eq('id', id)
-        .eq('user_id', userId);
-
-      if (supabaseError) throw supabaseError;
-
+      const { error } = await apiDeleteRenewal(id);
+      if (error) throw error;
       await loadRenewals();
       return true;
     } catch (err) {
