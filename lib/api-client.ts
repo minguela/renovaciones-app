@@ -176,7 +176,7 @@ export async function signInWithGoogle(): Promise<{ data: any; error: Error | nu
   try {
     // Web flow: redirect to Google
     if (typeof window !== 'undefined' && typeof document !== 'undefined') {
-      const redirectUri = `${SITE_URL}/api/auth/google/callback`;
+      const redirectUri = `${SITE_URL}/api/auth/google`;
       const googleUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
         `client_id=${GOOGLE_CLIENT_ID}` +
         `&redirect_uri=${encodeURIComponent(redirectUri)}` +
