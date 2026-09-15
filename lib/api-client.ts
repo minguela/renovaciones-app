@@ -173,12 +173,13 @@ export async function getCurrentUser(): Promise<User | null> {
 
 const GOOGLE_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID || '';
 const SITE_URL = process.env.EXPO_PUBLIC_SITE_URL || 'https://renovaciones.dminguela.es';
+const GOOGLE_CALLBACK_PATH = '/api/auth/google/callback';
 
 export async function signInWithGoogle(): Promise<{ data: any; error: Error | null }> {
   try {
     // Web flow: redirect to Google
     if (typeof window !== 'undefined' && typeof document !== 'undefined') {
-      const redirectUri = `${SITE_URL}/api/auth/google`;
+      const redirectUri = `${SITE_URL}${GOOGLE_CALLBACK_PATH}`;
       const googleUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
         `client_id=${GOOGLE_CLIENT_ID}` +
         `&redirect_uri=${encodeURIComponent(redirectUri)}` +
