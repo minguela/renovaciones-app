@@ -59,14 +59,6 @@ async function findOrCreateUser(googleUser: any) {
   return { userId: rows[0].id, email };
 }
 
-function getCallbackRedirectUri(req: any) {
-  const requestPath = typeof req?.url === 'string' ? new URL(req.url, SITE_URL).pathname : '';
-  const callbackPath = requestPath.endsWith(GOOGLE_CALLBACK_PATH)
-    ? GOOGLE_CALLBACK_PATH
-    : '/api/auth/google';
-  return `${SITE_URL}${callbackPath}`;
-}
-
 export default async function handler(req: any, res: any) {
   // --- GET: OAuth callback (web flow) ---
   if (req.method === 'GET') {
@@ -75,7 +67,7 @@ export default async function handler(req: any, res: any) {
     if (!code) return res.redirect(`${SITE_URL}/?error=no_code`);
 
     try {
-      const googleUser = await exchangeCodeForUser(String(code), getCallbackRedirectUri(req));
+      const googleUser = await exchangeCodeForUser(String(code), `${SITE_URL}${GOOGLE_CALLBACK_PATH}`);
       const { userId } = await findOrCreateUser(googleUser);
       const token = generateToken(userId);
       return res.redirect(`${SITE_URL}/?token=${token}&auth=google`);
