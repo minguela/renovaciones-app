@@ -12,7 +12,7 @@ interface WhatsAppNotificationParams {
 /**
  * Send WhatsApp message using CallMeBot API
  * User needs to:
- * 1. Add +34 644 16 71 91 to their contacts
+ * 1. Check the current bot number at https://www.callmebot.com/blog/free-api-whatsapp-messages/
  * 2. Send "I allow callmebot to send me messages" to that number
  * 3. Get API key from https://www.callmebot.com/blog/free-api-whatsapp-messages/
  */

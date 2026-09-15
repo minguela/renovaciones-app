@@ -6,7 +6,7 @@ Aplicación multiplataforma para gestionar seguros, suscripciones y renovaciones
 
 - Gestión de renovaciones (seguros, suscripciones, licencias)
 - Notificaciones vía WhatsApp, Telegram o Email
-- Sincronización en la nube con Supabase
+- Sincronización en la nube con Neon PostgreSQL
 - Autenticación de usuarios
 - Calculadora de gastos mensuales/anuales
 - Diseño responsive (móvil y web)
@@ -17,17 +17,16 @@ Aplicación multiplataforma para gestionar seguros, suscripciones y renovaciones
 ```
 Frontend: React Native + Expo (iOS/Web)
 Backend: Serverless Functions (Vercel/Netlify)
-Database: Supabase (PostgreSQL + Auth)
+Database: Neon PostgreSQL + autenticación propia
 Notifications: WhatsApp (CallMeBot), Telegram Bot, Email (Resend)
 ```
 
 ## Configuración Rápida
 
-### 1. Supabase (Base de datos)
+### 1. Base de datos
 
-1. Crea proyecto en [supabase.com](https://supabase.com)
-2. Ve a SQL Editor y ejecuta el contenido de `supabase/schema.sql`
-3. Copia URL y anon key desde Settings > API
+1. Configura `DATABASE_URL` para Neon PostgreSQL en Vercel.
+2. Ejecuta `scripts/migrate-to-neon.sql` si instalas un proyecto nuevo.
 
 ### 2. Variables de entorno
 
@@ -37,16 +36,13 @@ cp .env.example .env
 
 Edita `.env`:
 ```
-EXPO_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-EXPO_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
-SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+DATABASE_URL=postgresql://...
 
 # Para notificaciones (opcional)
 CALLMEBOT_API_KEY=your-key
 TELEGRAM_BOT_TOKEN=your-bot-token
 RESEND_API_KEY=your-key
-NOTIFICATION_FUNCTION_SECRET=long-random-internal-secret
+CRON_SECRET=long-random-internal-secret
 ```
 
 ### 3. Instalar dependencias
@@ -70,20 +66,21 @@ npx expo start
 
 ## Configuración de Notificaciones
 
-### WhatsApp (CallMeBot) - Gratis
+### WhatsApp (CallMeBot) - Opcional
 
-1. Añade `+34 644 16 71 91` a tus contactos
+1. Añade el número que figura en la [guía actual de CallMeBot](https://www.callmebot.com/blog/free-api-whatsapp-messages/) a tus contactos (a 15-09-2026 es `+34 623 78 95 80`).
 2. Envía: `I allow callmebot to send me messages`
 3. Obtén tu API key en [callmebot.com](https://www.callmebot.com/blog/free-api-whatsapp-messages/)
-4. Guarda en tu perfil de la app
+4. En Ajustes, elige WhatsApp, guarda tu propio número con prefijo internacional y envía una prueba. Usa Telegram como canal principal para avisos críticos.
 
-### Telegram - Gratis
+### Telegram - Gratis y recomendado
 
 1. Crea un bot con [@BotFather](https://t.me/BotFather)
 2. Copia el token del bot
-3. Escribe un mensaje al bot
-4. Obtén tu chat ID: `https://api.telegram.org/bot<TOKEN>/getUpdates`
-5. Configura en la app
+3. Envía `/start` al bot desde tu cuenta personal.
+4. Obtén tu chat ID de `getUpdates` tras iniciar el bot. Nunca pegues el token en la pantalla de la app.
+5. En Ajustes, elige **Telegram**, introduce tu Chat ID, activa recordatorios, guarda y pulsa **Probar aviso**. Comprueba que el mensaje aparece en tu chat.
+6. Configura `TELEGRAM_BOT_TOKEN` y `CRON_SECRET` en Vercel. El cron se ejecuta a las 07:00 UTC y avisa en el plazo elegido, y a 7, 3, 1 días y el día del cargo si caen dentro de ese plazo.
 
 ### Email (Resend) - 100 emails/día gratis
 

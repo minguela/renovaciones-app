@@ -1,128 +1,62 @@
-// api/check-renewals.ts
-// Scheduled endpoint — called daily by cron/Uptime-Kuma/n8n
-// Uses Neon PostgreSQL instead of Supabase
-
 import { query } from './db';
+import { deliverNotification } from '../lib/notifications/delivery';
+import { daysBetween, nextOccurrence, shouldRemind } from '../lib/notifications/reminders';
 
-const CALLMEBOT_API_KEY = process.env.CALLMEBOT_API_KEY || '';
-const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
-const RESEND_API_KEY = process.env.RESEND_API_KEY || '';
-const INTERNAL_SECRET = process.env.NOTIFICATION_FUNCTION_SECRET || '';
+function todayInMadrid(): string {
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Europe/Madrid', year: 'numeric', month: '2-digit', day: '2-digit',
+  }).formatToParts(new Date());
+  const value = (type: string) => parts.find(part => part.type === type)?.value || '';
+  return `${value('year')}-${value('month')}-${value('day')}`;
+}
 
 export default async function handler(req: any, res: any) {
-  if (req.method !== 'GET') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
-
-  const { secret } = req.query;
-  if (!INTERNAL_SECRET || secret !== INTERNAL_SECRET) {
+  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+  const secret = process.env.CRON_SECRET;
+  if (!secret || req.headers.authorization !== `Bearer ${secret}`) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
-  const results: any[] = [];
-  const now = new Date();
-  const today = now.toISOString().split('T')[0];
+  const today = todayInMadrid();
+  const details: any[] = [];
+  let sent = 0;
+  let failed = 0;
 
   try {
-    // Fetch all profiles with notifications enabled
-    const profilesRes = await query(
-      "SELECT p.*, u.email as user_email FROM profiles p JOIN users u ON p.user_id = u.id WHERE p.notifications_enabled = true"
-    );
-    const profiles = profilesRes.rows;
-
-    if (!profiles || profiles.length === 0) {
-      return res.json({ success: true, checked: 0, sent: 0, message: 'No profiles with notifications enabled' });
-    }
-
-    let sent = 0;
+    const profiles = (await query(
+      `SELECT p.*, u.email AS user_email FROM profiles p
+       JOIN users u ON p.user_id = u.id
+       WHERE p.notifications_enabled = true AND p.notification_method IN ('telegram', 'email', 'whatsapp')`
+    )).rows;
 
     for (const profile of profiles) {
-      // Fetch active renewals for this user
-      const renewalsRes = await query(
-        "SELECT * FROM renewals WHERE user_id = $1",
+      const renewals = (await query(
+        `SELECT *, renewal_date::text AS renewal_date FROM renewals
+         WHERE user_id = $1 AND notification_enabled = true AND status <> 'cancelled'`,
         [profile.user_id]
-      );
-      const renewals = renewalsRes.rows;
+      )).rows;
 
       for (const renewal of renewals) {
-        if (!renewal.notification_enabled) continue;
-        if (renewal.status === 'cancelled') continue;
+        const occurrence = nextOccurrence(renewal.renewal_date, renewal.frequency, today);
+        if (!occurrence) continue;
+        const daysUntil = daysBetween(today, occurrence);
+        const lead = Math.max(0, Number(renewal.notification_days_before ?? 7));
+        if (!shouldRemind(daysUntil, lead)) continue;
 
-        const renewalDate = new Date(renewal.renewal_date);
-        const daysUntil = Math.ceil((renewalDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-        const notifyBefore = renewal.notification_days_before || 7;
-
-        if (daysUntil < 0 || daysUntil > notifyBefore) continue;
-
-        const cost = `${Number(renewal.cost).toFixed(2)} ${renewal.currency}`;
-        const dateStr = renewalDate.toLocaleDateString('es-ES');
         const daysText = daysUntil === 0 ? 'hoy' : daysUntil === 1 ? 'mañana' : `en ${daysUntil} días`;
-
-        const method = profile.notification_method || 'none';
-        let sentOk = false;
-
-        try {
-          switch (method) {
-            case 'email': {
-              const to = profile.email_address || profile.email || profile.user_email;
-              if (!to || !RESEND_API_KEY) break;
-              const emailRes = await fetch('https://api.resend.com/emails', {
-                method: 'POST',
-                headers: { Authorization: `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  from: 'Renovaciones <notificaciones@dminguela.es>',
-                  to,
-                  subject: `🔔 ${renewal.name} vence ${daysText}`,
-                  html: `<h2>🔔 Recordatorio de Renovación</h2><p><strong>${renewal.name}</strong> vence <strong>${daysText}</strong>.</p><p>📅 Fecha: ${dateStr}<br>💰 Importe: ${cost}</p><p><a href="https://renovaciones.dminguela.es">Gestionar en Renovaciones</a></p>`,
-                }),
-              });
-              if (emailRes.ok) sentOk = true;
-              break;
-            }
-            case 'whatsapp': {
-              const phone = profile.whatsapp_number;
-              if (!phone || !CALLMEBOT_API_KEY) break;
-              const msg = `🔔 *Recordatorio de Renovación*%0A%0A*${renewal.name}* vence ${daysText}%0A%0A📅 Fecha: ${dateStr}%0A💰 Importe: ${cost}`;
-              const waRes = await fetch(`https://api.callmebot.com/whatsapp.php?phone=${phone}&text=${msg}&apikey=${CALLMEBOT_API_KEY}`);
-              if (waRes.ok) sentOk = true;
-              break;
-            }
-            case 'telegram': {
-              const chatId = profile.telegram_chat_id;
-              if (!chatId || !TELEGRAM_BOT_TOKEN) break;
-              const tgMsg = `<b>🔔 Recordatorio de Renovación</b>%0A%0A<b>${renewal.name}</b> vence ${daysText}%0A%0A📅 Fecha: ${dateStr}%0A💰 Importe: ${cost}`;
-              const tgRes = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage?chat_id=${chatId}&text=${tgMsg}&parse_mode=HTML`);
-              if (tgRes.ok) sentOk = true;
-              break;
-            }
-            case 'sms':
-            case 'push':
-              break;
-          }
-        } catch (e: any) {
-          console.error(`Notification error for ${profile.user_id}/${renewal.id}:`, e.message);
+        const date = new Date(`${occurrence}T12:00:00Z`).toLocaleDateString('es-ES', { timeZone: 'UTC' });
+        const message = `🔔 Recordatorio de renovación\n\n${renewal.name} vence ${daysText}.\n📅 Fecha: ${date}\n💰 Importe: ${Number(renewal.cost).toFixed(2)} ${renewal.currency}\n\nGestionar: https://renovaciones.dminguela.es`;
+        const outcome = await deliverNotification(profile, message, `🔔 ${renewal.name} vence ${daysText}`, true);
+        if (outcome.success) sent++;
+        else {
+          failed++;
+          console.error('Reminder delivery failed', { userId: profile.user_id, renewalId: renewal.id, channel: profile.notification_method, error: outcome.error });
         }
-
-        results.push({
-          userId: profile.user_id,
-          renewalId: renewal.id,
-          renewal: renewal.name,
-          channel: method,
-          daysUntil,
-          sent: sentOk,
-        });
-
-        if (sentOk) sent++;
+        details.push({ renewalId: renewal.id, channel: outcome.channel || profile.notification_method, daysUntil, sent: outcome.success, error: outcome.error });
       }
     }
 
-    return res.json({
-      success: true,
-      date: today,
-      checked: profiles.length,
-      sent,
-      details: results,
-    });
+    return res.status(failed ? 502 : 200).json({ success: failed === 0, date: today, checked: profiles.length, sent, failed, details });
   } catch (error: any) {
     console.error('check-renewals error:', error);
     return res.status(500).json({ success: false, error: error.message });

@@ -33,16 +33,15 @@ export async function sendTelegramMessage({
       body: JSON.stringify({
         chat_id: chatId,
         text: message,
-        parse_mode: 'HTML',
       }),
     });
 
     const data = await response.json();
 
-    if (data.ok) {
+    if (response.ok && data.ok) {
       return { success: true };
     } else {
-      return { success: false, error: data.description };
+      return { success: false, error: data.description || `Telegram HTTP ${response.status}` };
     }
   } catch (error) {
     return {

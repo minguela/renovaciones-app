@@ -1,7 +1,9 @@
 // API client for RenovacionesApp — replaces Supabase with Neon-backed API routes
 // Works on both web (fetch) and native (fetch)
+import { Platform } from 'react-native';
 
-const API_BASE = process.env.EXPO_PUBLIC_API_URL || '';
+const API_BASE = process.env.EXPO_PUBLIC_API_URL ||
+  (Platform.OS === 'web' ? '' : process.env.EXPO_PUBLIC_SITE_URL || 'https://renovaciones.dminguela.es');
 
 // Token storage abstraction (works with AsyncStorage on native, localStorage on web)
 let tokenStore: { getToken: () => Promise<string | null>; setToken: (t: string | null) => Promise<void> } | null = null;
@@ -64,10 +66,10 @@ export interface Profile {
   id: string;
   userId: string;
   email?: string;
-  whatsapp_number?: string;
-  telegram_chat_id?: string;
+  whatsapp_number?: string | null;
+  telegram_chat_id?: string | null;
   sms_number?: string;
-  email_address?: string;
+  email_address?: string | null;
   notifications_enabled: boolean;
   notification_method: string;
   created_at: string;
@@ -278,6 +280,13 @@ export async function updateProfile(updates: Partial<Profile>): Promise<{ data: 
   } catch (err: any) {
     return { data: null, error: err };
   }
+}
+
+export async function sendTestNotification(): Promise<{ success: boolean; error?: string }> {
+  return apiFetch('send-notification', {
+    method: 'POST',
+    body: JSON.stringify({ type: 'test' }),
+  });
 }
 
 // ── Catalogs ──

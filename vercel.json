@@ -4,6 +4,9 @@
   "framework": null,
   "installCommand": "npm install",
   "cleanUrls": true,
+  "crons": [
+    { "path": "/api/check-renewals", "schedule": "0 7 * * *" }
+  ],
   "rewrites": [
     { "source": "/renewal/:id", "destination": "/renewal/[id].html" }
   ],

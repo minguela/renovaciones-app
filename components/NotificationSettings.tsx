@@ -1,11 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, StyleSheet, Switch, Text, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Field } from '@/components/ui/Field';
 import { Input } from '@/components/ui/Input';
 import { InlineBanner } from '@/components/ui/InlineBanner';
-import { getCurrentUser, getProfile, updateProfile } from '@/lib/api-client';
+import { getCurrentUser, getProfile, updateProfile, sendTestNotification } from '@/lib/api-client';
 import { useSemanticTheme } from '@/constants/design-tokens';
 import { useToast } from '@/hooks/useToast';
 
@@ -18,9 +18,12 @@ export function NotificationSettings() {
 
   const [whatsappNumber, setWhatsappNumber] = useState('');
   const [telegramChatId, setTelegramChatId] = useState('');
-  const [smsNumber, setSmsNumber] = useState('');
   const [emailAddress, setEmailAddress] = useState('');
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  const [notificationMethod, setNotificationMethod] = useState<'telegram' | 'email' | 'whatsapp'>('telegram');
+  const [savedSignature, setSavedSignature] = useState('');
+
+  const signature = JSON.stringify({ whatsappNumber, telegramChatId, emailAddress, notificationsEnabled, notificationMethod });
 
   useEffect(() => {
     loadProfile();
@@ -28,8 +31,9 @@ export function NotificationSettings() {
 
   const canSendTest = useMemo(() => {
     if (!notificationsEnabled) return false;
-    return Boolean(emailAddress || smsNumber || whatsappNumber || telegramChatId);
-  }, [notificationsEnabled, emailAddress, smsNumber, whatsappNumber, telegramChatId]);
+    const destination = notificationMethod === 'telegram' ? telegramChatId : notificationMethod === 'email' ? emailAddress : whatsappNumber;
+    return Boolean(destination && savedSignature === signature);
+  }, [notificationsEnabled, notificationMethod, telegramChatId, emailAddress, whatsappNumber, savedSignature, signature]);
 
   const loadProfile = async () => {
     try {
@@ -42,10 +46,16 @@ export function NotificationSettings() {
 
       setWhatsappNumber(data.whatsapp_number || '');
       setTelegramChatId(data.telegram_chat_id || '');
-      setSmsNumber(data.sms_number || '');
       setEmailAddress(data.email_address || user.email || '');
       setNotificationsEnabled(Boolean(data.notifications_enabled));
-    } catch (err) {
+      const method = ['telegram', 'email', 'whatsapp'].includes(data.notification_method) ? data.notification_method : 'telegram';
+      setNotificationMethod(method as 'telegram' | 'email' | 'whatsapp');
+      setSavedSignature(JSON.stringify({
+        whatsappNumber: data.whatsapp_number || '', telegramChatId: data.telegram_chat_id || '',
+        emailAddress: data.email_address || user.email || '',
+        notificationsEnabled: Boolean(data.notifications_enabled), notificationMethod: method,
+      }));
+    } catch {
       setError('No se pudieron cargar tus ajustes de notificaciones.');
     } finally {
       setLoading(false);
@@ -65,47 +75,32 @@ export function NotificationSettings() {
       const updates = {
         whatsapp_number: whatsappNumber || null,
         telegram_chat_id: telegramChatId || null,
-        sms_number: smsNumber || null,
         email_address: emailAddress || null,
         notifications_enabled: notificationsEnabled,
+        notification_method: notificationMethod,
       };
 
       const { error: upsertError } = await updateProfile(updates);
       if (upsertError) throw upsertError;
 
+      setSavedSignature(signature);
       showToast('Ajustes guardados correctamente', 'success');
     } catch (err) {
-      setError('No se pudieron guardar los ajustes. Inténtalo de nuevo.');
+      setError(err instanceof Error ? `No se pudieron guardar los ajustes: ${err.message}` : 'No se pudieron guardar los ajustes.');
     } finally {
       setSaving(false);
     }
   };
 
-  const sendTestNotification = async () => {
+  const handleSendTestNotification = async () => {
     setError(null);
     try {
-      const user = await getCurrentUser();
-      if (!user) return;
-      const token = typeof localStorage !== 'undefined' ? localStorage.getItem('auth_token') : null;
-      if (!token) {
-        setError('Debes iniciar sesión para enviar una prueba.');
-        return;
-      }
-
-      const response = await fetch('/api/send-notification', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ type: 'test' }),
-      });
-      const result = await response.json();
-      if (response.status >= 400) throw new Error(result.error || 'Error al enviar');
+      const result = await sendTestNotification();
+      if (!result.success) throw new Error(result.error || 'Error al enviar');
 
       showToast('Aviso de prueba enviado', 'success');
     } catch (err) {
-      setError('No se pudo enviar la notificación de prueba.');
+      setError(err instanceof Error ? `No se pudo enviar la prueba: ${err.message}` : 'No se pudo enviar la notificación de prueba.');
     }
   };
 
@@ -131,30 +126,41 @@ export function NotificationSettings() {
         <Switch value={notificationsEnabled} onValueChange={setNotificationsEnabled} />
       </View>
 
-      <Field label="Email" hint="Canal recomendado para avisos estándar.">
+      <Text style={[styles.switchLabel, { color: colors.textPrimary, marginBottom: 8 }]}>Canal principal</Text>
+      <View style={styles.channelRow}>
+        {([['telegram', 'Telegram'], ['email', 'Email'], ['whatsapp', 'WhatsApp']] as const).map(([value, label]) => (
+          <TouchableOpacity
+            key={value}
+            accessibilityRole="radio"
+            accessibilityState={{ checked: notificationMethod === value }}
+            onPress={() => setNotificationMethod(value)}
+            style={[styles.channelOption, { borderColor: notificationMethod === value ? colors.textPrimary : colors.textSecondary }]}
+          >
+            <Text style={{ color: colors.textPrimary }}>{label}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      {notificationMethod === 'email' && <Field label="Email" hint="Dirección a la que llegarán los recordatorios.">
         <Input
           value={emailAddress}
           onChangeText={setEmailAddress}
           placeholder="tu@email.com"
           keyboardType="email-address"
         />
-      </Field>
+      </Field>}
 
-      <Field label="Teléfono SMS" hint="Incluye prefijo internacional. Ej: +34600111222">
-        <Input value={smsNumber} onChangeText={setSmsNumber} placeholder="+34600111222" keyboardType="phone-pad" />
-      </Field>
-
-      <Field label="WhatsApp" hint="Incluye prefijo internacional.">
+      {notificationMethod === 'whatsapp' && <Field label="WhatsApp" hint="Requiere activar CallMeBot primero. Incluye prefijo internacional.">
         <Input value={whatsappNumber} onChangeText={setWhatsappNumber} placeholder="+34600111222" keyboardType="phone-pad" />
-      </Field>
+      </Field>}
 
-      <Field label="Telegram Chat ID" hint="Ejemplo: 123456789">
+      {notificationMethod === 'telegram' && <Field label="Telegram Chat ID" hint="Crea un bot con @BotFather, escribe /start al bot y copia tu Chat ID de getUpdates. El token del bot se configura en el servidor.">
         <Input value={telegramChatId} onChangeText={setTelegramChatId} placeholder="123456789" />
-      </Field>
+      </Field>}
 
       <Button title="Guardar ajustes" onPress={handleSave} loading={saving} />
       <View style={{ height: 10 }} />
-      <Button title="Probar aviso" variant="secondary" onPress={sendTestNotification} disabled={!canSendTest} />
+      <Button title="Probar aviso" variant="secondary" onPress={handleSendTestNotification} disabled={!canSendTest} />
     </Card>
   );
 }
@@ -179,4 +185,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
   },
+  channelRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 },
+  channelOption: { borderWidth: 1, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8 },
 });
