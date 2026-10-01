@@ -10,6 +10,9 @@ import { FontLoader } from '@/components/FontLoader';
 import { WebMetaTags } from '@/components/WebMetaTags';
 import { setTokenStore, handleOAuthCallback } from '@/lib/api-client';
 import { useAuth } from '@/hooks/useAuth';
+import { WebAnalytics } from '@/components/WebAnalytics';
+import { ToastProvider } from '@/components/ui/ToastContext';
+import { ToastContainer } from '@/components/ui/Toast';
 
 // Configure token storage
 if (typeof localStorage !== 'undefined') {
@@ -20,9 +23,6 @@ if (typeof localStorage !== 'undefined') {
   // Handle OAuth callback token from URL (Google Sign-In redirect)
   handleOAuthCallback();
 }
-import { ToastProvider } from '@/components/ui/ToastContext';
-import { ToastContainer } from '@/components/ui/Toast';
-
 export const unstable_settings = {
   anchor: '(tabs)',
 };
@@ -38,6 +38,7 @@ export default function RootLayout() {
 
   return (
     <ToastProvider>
+      {isWeb ? <WebAnalytics /> : null}
       <FontLoader />
       <WebMetaTags />
       <ThemeProvider value={activeTheme}>
