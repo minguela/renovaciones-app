@@ -1,5 +1,5 @@
-import type { CustomCatalogRepository } from '../../src/application/ports/custom-catalog-repository'
-import type { CustomCatalog } from '../../src/domain/entities'
+import type { CustomCatalogRepository } from '../../../src/application/ports/custom-catalog-repository'
+import type { CustomCatalog } from '../../../src/domain/entities'
 
 interface CatalogRow {
   id: string

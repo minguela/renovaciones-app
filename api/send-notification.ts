@@ -1,5 +1,5 @@
-import { query } from './db';
-import { resolveServerActor } from './legacy-actor';
+import { query } from '../server/api/db';
+import { resolveServerActor } from '../server/api/legacy-actor';
 import { deliverNotification } from '../lib/notifications/delivery';
 import { daysBetween, nextOccurrence } from '../lib/notifications/reminders';
 

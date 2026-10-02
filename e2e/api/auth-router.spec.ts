@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { createAuthRouter } from '../../api/auth-router';
 
@@ -64,4 +64,33 @@ test('rewrites every public auth URL through the shared handler and preserves th
     ['/api/auth/clerk/link-legacy', '/api/auth-router?route=linkLegacy'],
     ['/api/auth/clerk/provision', '/api/auth-router?route=provision'],
   ]));
+});
+
+test('keeps auth handler implementations outside Vercel’s api function directory', () => {
+  const oldAuthDirectory = resolve(process.cwd(), 'api/auth');
+  const serverAuthDirectory = resolve(process.cwd(), 'server/auth-handlers');
+  const apiDirectory = resolve(process.cwd(), 'api');
+  const listRuntimeFiles = (directory: string): string[] => readdirSync(directory, { withFileTypes: true })
+    .flatMap(entry => {
+      const path = resolve(directory, entry.name);
+      if (entry.isDirectory()) return listRuntimeFiles(path);
+      return /\.(?:ts|js)$/u.test(entry.name) ? [path.slice(apiDirectory.length + 1)] : [];
+    })
+    .sort();
+
+  expect(existsSync(oldAuthDirectory)).toBe(false);
+  expect(readdirSync(serverAuthDirectory, { withFileTypes: true })
+    .filter(entry => entry.isFile()).map(entry => entry.name).sort())
+    .toEqual(['google.ts', 'login.ts', 'me.ts', 'register.ts']);
+  expect(readdirSync(resolve(serverAuthDirectory, 'clerk')).sort())
+    .toEqual(['link-legacy.ts', 'provision.ts']);
+  expect(listRuntimeFiles(apiDirectory)).toEqual([
+    'auth-router.ts',
+    'catalogs.ts',
+    'check-renewals.ts',
+    'history.ts',
+    'profiles.ts',
+    'renewals.ts',
+    'send-notification.ts',
+  ]);
 });

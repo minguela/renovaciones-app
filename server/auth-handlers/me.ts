@@ -1,5 +1,5 @@
-import { query } from '../db';
-import { resolveServerActor } from '../legacy-actor';
+import { query } from '../api/db';
+import { resolveServerActor } from '../api/legacy-actor';
 
 export async function handler(req: any, res: any) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });

@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { createGetAndWriteRouter } from '../../api/endpoint-router';
+import { createGetAndWriteRouter } from '../../server/api/endpoint-router';
 
 test('keeps GET on its existing handler and sends mutation methods to the write handler', async () => {
   const calls: string[] = [];

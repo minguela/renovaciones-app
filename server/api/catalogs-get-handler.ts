@@ -1,5 +1,5 @@
 import type { ServerActor } from './server-actor'
-import type { CustomCatalog } from '../src/domain/entities'
+import type { CustomCatalog } from '../../src/domain/entities'
 
 interface CatalogsGetHandlerDependencies {
   getActor: (req: any) => Promise<ServerActor | null>

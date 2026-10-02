@@ -1,5 +1,5 @@
-import type { RenewalListItem } from '../../src/domain/entities'
-import type { RenewalRepository } from '../../src/application/ports/renewal-repository'
+import type { RenewalListItem } from '../../../src/domain/entities'
+import type { RenewalRepository } from '../../../src/application/ports/renewal-repository'
 
 interface RenewalRow {
   id: string

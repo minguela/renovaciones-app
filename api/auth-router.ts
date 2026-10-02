@@ -19,11 +19,11 @@ export function createAuthRouter(handlers: AuthRouteHandlers): ApiHandler {
   };
 }
 
-import { handler as google } from './auth/google';
-import { handler as login } from './auth/login';
-import { handler as me } from './auth/me';
-import { handler as register } from './auth/register';
-import { handler as linkLegacy } from './auth/clerk/link-legacy';
-import { handler as provision } from './auth/clerk/provision';
+import { handler as google } from '../server/auth-handlers/google';
+import { handler as login } from '../server/auth-handlers/login';
+import { handler as me } from '../server/auth-handlers/me';
+import { handler as register } from '../server/auth-handlers/register';
+import { handler as linkLegacy } from '../server/auth-handlers/clerk/link-legacy';
+import { handler as provision } from '../server/auth-handlers/clerk/provision';
 
 export default createAuthRouter({ google, login, me, register, linkLegacy, provision });

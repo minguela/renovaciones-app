@@ -1,7 +1,7 @@
-import { verifyToken } from '../../auth-helpers';
-import { withTransaction } from '../../db';
-import { verifyClerkSessionToken } from '../../clerk-token-verifier';
-import { IdentityConflictError, IdentityOwnerNotFoundError, linkClerkToLegacyOwner } from '../../clerk-identity-service';
+import { verifyToken } from '../../api/auth-helpers';
+import { withTransaction } from '../../api/db';
+import { verifyClerkSessionToken } from '../../api/clerk-token-verifier';
+import { IdentityConflictError, IdentityOwnerNotFoundError, linkClerkToLegacyOwner } from '../../api/clerk-identity-service';
 
 export function createClerkLegacyLinkHandler(dependencies: {
   verifyClerk: (token: string) => Promise<{ sub: string } | null>;

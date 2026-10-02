@@ -1,8 +1,8 @@
 import { test, expect } from '@playwright/test';
-import { createCatalogsGetHandler } from '../../api/catalogs-get-handler';
-import { createNeonCustomCatalogRepository } from '../../api/adapters/neon-custom-catalog-repository';
+import { createCatalogsGetHandler } from '../../server/api/catalogs-get-handler';
+import { createNeonCustomCatalogRepository } from '../../server/api/adapters/neon-custom-catalog-repository';
 import { listCustomCatalogsUseCase } from '../../src/application/list-custom-catalogs';
-import { createServerActorResolver } from '../../api/server-actor';
+import { createServerActorResolver } from '../../server/api/server-actor';
 
 const databaseRows = {
   'user-a': [{

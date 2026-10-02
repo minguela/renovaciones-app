@@ -1,5 +1,5 @@
-import { query } from '../db';
-import { generateToken, verifyPassword } from '../auth-helpers';
+import { query } from '../api/db';
+import { generateToken, verifyPassword } from '../api/auth-helpers';
 
 export function createLegacyLoginHandler(dependencies: {
   findUser: (email: string) => Promise<{ id: string; email: string; password_hash: string | null } | null>;

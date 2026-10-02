@@ -1,8 +1,8 @@
 import { test, expect } from '@playwright/test';
-import { createRenewalsGetHandler } from '../../api/renewals-get-handler';
-import { createNeonRenewalRepository } from '../../api/adapters/neon-renewal-repository';
+import { createRenewalsGetHandler } from '../../server/api/renewals-get-handler';
+import { createNeonRenewalRepository } from '../../server/api/adapters/neon-renewal-repository';
 import { listRenewalsUseCase } from '../../src/application/list-renewals';
-import { createServerActorResolver } from '../../api/server-actor';
+import { createServerActorResolver } from '../../server/api/server-actor';
 
 const databaseRows = {
   'user-a': [{

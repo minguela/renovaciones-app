@@ -1,4 +1,4 @@
-import type { CustomCatalog } from '../src/domain/entities'
+import type { CustomCatalog } from '../../src/domain/entities'
 import type { ServerActor } from './server-actor'
 
 interface CatalogMutationsHandlerDependencies {

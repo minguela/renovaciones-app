@@ -1,10 +1,10 @@
 import { test, expect } from '@playwright/test';
-import { createCatalogMutationsHandler } from '../../api/catalog-mutations-handler';
-import { createNeonCustomCatalogRepository } from '../../api/adapters/neon-custom-catalog-repository';
+import { createCatalogMutationsHandler } from '../../server/api/catalog-mutations-handler';
+import { createNeonCustomCatalogRepository } from '../../server/api/adapters/neon-custom-catalog-repository';
 import { createCustomCatalogUseCase } from '../../src/application/create-custom-catalog';
 import { updateCustomCatalogUseCase } from '../../src/application/update-custom-catalog';
 import { deleteCustomCatalogUseCase } from '../../src/application/delete-custom-catalog';
-import { createServerActorResolver } from '../../api/server-actor';
+import { createServerActorResolver } from '../../server/api/server-actor';
 
 function createSystem() {
   const calls: { sql: string; params?: unknown[] }[] = [];

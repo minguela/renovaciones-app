@@ -1,6 +1,6 @@
 import { Pool } from '@neondatabase/serverless';
 import { test, expect } from '@playwright/test';
-import { IdentityConflictError, linkClerkToLegacyOwner, provisionClerkOwner } from '../../api/clerk-identity-service';
+import { IdentityConflictError, linkClerkToLegacyOwner, provisionClerkOwner } from '../../server/api/clerk-identity-service';
 
 const testDatabaseUrl = process.env.TEST_DATABASE_URL;
 

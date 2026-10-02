@@ -1,8 +1,8 @@
 // /api/auth/google — Google OAuth sign-in
 // GET: OAuth callback redirect (web flow)
 // POST: Exchange authorization code for JWT (native flow)
-import { generateToken } from '../auth-helpers';
-import { findOrCreateGoogleUser, GoogleAccountLinkRequiredError } from '../google-identity';
+import { generateToken } from '../api/auth-helpers';
+import { findOrCreateGoogleUser, GoogleAccountLinkRequiredError } from '../api/google-identity';
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || '';

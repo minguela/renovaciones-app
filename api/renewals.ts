@@ -1,13 +1,13 @@
-import { query } from './db';
-import { resolveServerActor } from './legacy-actor';
-import { createRenewalsGetHandler } from './renewals-get-handler';
-import { createNeonRenewalRepository } from './adapters/neon-renewal-repository';
+import { query } from '../server/api/db';
+import { resolveServerActor } from '../server/api/legacy-actor';
+import { createRenewalsGetHandler } from '../server/api/renewals-get-handler';
+import { createNeonRenewalRepository } from '../server/api/adapters/neon-renewal-repository';
 import { listRenewalsUseCase } from '../src/application/list-renewals';
 import { createRenewalUseCase } from '../src/application/create-renewal';
 import { updateRenewalUseCase } from '../src/application/update-renewal';
 import { deleteRenewalUseCase } from '../src/application/delete-renewal';
-import { createRenewalMutationsHandler } from './renewal-mutations-handler';
-import { createGetAndWriteRouter } from './endpoint-router';
+import { createRenewalMutationsHandler } from '../server/api/renewal-mutations-handler';
+import { createGetAndWriteRouter } from '../server/api/endpoint-router';
 
 const renewalRepository = createNeonRenewalRepository(query);
 const handleGetRenewals = createRenewalsGetHandler({

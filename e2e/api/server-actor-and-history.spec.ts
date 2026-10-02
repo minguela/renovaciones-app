@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
-import { createServerActorResolver } from '../../api/server-actor';
-import { createHistoryHandler } from '../../api/history-handler';
+import { createServerActorResolver } from '../../server/api/server-actor';
+import { createHistoryHandler } from '../../server/api/history-handler';
 
 test('resolves a legacy actor from the verified bearer token, not a body userId', async () => {
   const resolveActor = createServerActorResolver({

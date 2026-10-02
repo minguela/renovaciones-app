@@ -1,4 +1,4 @@
-import type { RenewalListItem } from '../src/domain/entities'
+import type { RenewalListItem } from '../../src/domain/entities'
 import type { ServerActor } from './server-actor'
 
 interface RenewalMutationsHandlerDependencies {

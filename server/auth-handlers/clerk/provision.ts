@@ -1,7 +1,7 @@
 import { createClerkClient } from '@clerk/backend';
-import { query, withTransaction } from '../../db';
-import { verifyClerkSessionToken } from '../../clerk-token-verifier';
-import { IdentityConflictError, provisionClerkOwner } from '../../clerk-identity-service';
+import { query, withTransaction } from '../../api/db';
+import { verifyClerkSessionToken } from '../../api/clerk-token-verifier';
+import { IdentityConflictError, provisionClerkOwner } from '../../api/clerk-identity-service';
 
 const clerkClient = process.env.CLERK_SECRET_KEY
   ? createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY })

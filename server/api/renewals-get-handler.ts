@@ -1,5 +1,5 @@
 import type { ServerActor } from './server-actor'
-import type { RenewalListItem } from '../src/domain/entities'
+import type { RenewalListItem } from '../../src/domain/entities'
 
 interface RenewalsGetHandlerDependencies {
   getActor: (req: any) => Promise<ServerActor | null>

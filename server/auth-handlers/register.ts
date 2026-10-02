@@ -1,5 +1,5 @@
-import { query } from '../db';
-import { generateToken, hashPassword } from '../auth-helpers';
+import { query } from '../api/db';
+import { generateToken, hashPassword } from '../api/auth-helpers';
 
 export async function handler(req: any, res: any) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });

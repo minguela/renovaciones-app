@@ -1,14 +1,14 @@
 import { test, expect } from '@playwright/test';
-import { createClerkProvisionHandler } from '../../api/auth/clerk/provision';
-import { createClerkLegacyLinkHandler } from '../../api/auth/clerk/link-legacy';
-import { createLegacyLoginHandler } from '../../api/auth/login';
+import { createClerkProvisionHandler } from '../../server/auth-handlers/clerk/provision';
+import { createClerkLegacyLinkHandler } from '../../server/auth-handlers/clerk/link-legacy';
+import { createLegacyLoginHandler } from '../../server/auth-handlers/login';
 import { clearAuthSessions, submitExplicitLegacyLink } from '../../src/application/auth-session-lifecycle';
 import {
   IdentityConflictError,
   IdentityOwnerNotFoundError,
   linkClerkToLegacyOwner,
   provisionClerkOwner,
-} from '../../api/clerk-identity-service';
+} from '../../server/api/clerk-identity-service';
 
 function responseRecorder() {
   return {

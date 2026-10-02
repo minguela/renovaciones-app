@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
-import { createClerkSessionTokenVerifier } from '../../api/clerk-token-verifier';
-import { createServerActorResolver } from '../../api/server-actor';
+import { createClerkSessionTokenVerifier } from '../../server/api/clerk-token-verifier';
+import { createServerActorResolver } from '../../server/api/server-actor';
 
 const NOW = 1_798_876_800_000;
 

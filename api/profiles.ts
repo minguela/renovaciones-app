@@ -1,5 +1,5 @@
-import { query } from './db';
-import { resolveServerActor } from './legacy-actor';
+import { query } from '../server/api/db';
+import { resolveServerActor } from '../server/api/legacy-actor';
 
 export default async function handler(req: any, res: any) {
   const actor = await resolveServerActor(req);

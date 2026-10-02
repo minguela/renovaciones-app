@@ -1,10 +1,10 @@
 import { test, expect } from '@playwright/test';
-import { createRenewalMutationsHandler } from '../../api/renewal-mutations-handler';
-import { createNeonRenewalRepository } from '../../api/adapters/neon-renewal-repository';
+import { createRenewalMutationsHandler } from '../../server/api/renewal-mutations-handler';
+import { createNeonRenewalRepository } from '../../server/api/adapters/neon-renewal-repository';
 import { createRenewalUseCase } from '../../src/application/create-renewal';
 import { updateRenewalUseCase } from '../../src/application/update-renewal';
 import { deleteRenewalUseCase } from '../../src/application/delete-renewal';
-import { createServerActorResolver } from '../../api/server-actor';
+import { createServerActorResolver } from '../../server/api/server-actor';
 
 const rowsByOwner = {
   'user-a': [renewalRow('renewal-a', 'user-a')],
