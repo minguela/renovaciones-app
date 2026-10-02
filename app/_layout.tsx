@@ -11,7 +11,7 @@ import { ToastContainer } from '@/components/ui/Toast';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { FontLoader } from '@/components/FontLoader';
 import { WebMetaTags } from '@/components/WebMetaTags';
-import { setTokenStore, handleOAuthCallback } from '@/lib/api-client';
+import { setTokenStore, setAuthModeStorage, handleOAuthCallback } from '@/lib/api-client';
 import { useAuth } from '@/hooks/useAuth';
 import { WebAnalytics } from '@/components/WebAnalytics';
 import { ClerkRuntime } from '@/components/ClerkRuntime';
@@ -24,6 +24,10 @@ if (typeof localStorage !== 'undefined') {
     getToken: async () => localStorage.getItem('auth_token'),
     setToken: async (t) => t ? localStorage.setItem('auth_token', t) : localStorage.removeItem('auth_token'),
   });
+  setAuthModeStorage({
+    getMode: async () => localStorage.getItem('auth_mode'),
+    setMode: async (mode) => { localStorage.setItem('auth_mode', mode); },
+  });
   // Handle OAuth callback token from URL (Google Sign-In redirect)
   handleOAuthCallback();
 } else if (Platform.OS !== 'web') {
@@ -33,6 +37,10 @@ if (typeof localStorage !== 'undefined') {
       if (token) await SecureStore.setItemAsync('legacy_auth_token', token);
       else await SecureStore.deleteItemAsync('legacy_auth_token');
     },
+  });
+  setAuthModeStorage({
+    getMode: () => SecureStore.getItemAsync('legacy_auth_mode'),
+    setMode: async (mode) => SecureStore.setItemAsync('legacy_auth_mode', mode),
   });
 }
 export const unstable_settings = {

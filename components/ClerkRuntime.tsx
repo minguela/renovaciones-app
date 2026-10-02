@@ -1,7 +1,7 @@
-import { ClerkProvider, useAuth } from '@clerk/expo';
+import { ClerkProvider, useAuth, useClerk } from '@clerk/expo';
 import { tokenCache } from '@clerk/expo/token-cache';
 import { useEffect, useRef } from 'react';
-import { clearLegacyAuthToken, setClerkTokenProvider } from '@/lib/api-client';
+import { setClerkSignOutHandler, setClerkTokenProvider } from '@/lib/api-client';
 
 const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY?.trim() || '';
 
@@ -16,8 +16,11 @@ export function ClerkRuntime({ children }: { children: React.ReactNode }) {
 
 function ClerkTokenBridge({ children }: { children: React.ReactNode }) {
   const auth = useAuth();
+  const clerk = useClerk();
   const authRef = useRef(auth);
+  const clerkRef = useRef(clerk);
   authRef.current = auth;
+  clerkRef.current = clerk;
 
   useEffect(() => {
     setClerkTokenProvider(async () => {
@@ -25,12 +28,15 @@ function ClerkTokenBridge({ children }: { children: React.ReactNode }) {
       if (!current.isLoaded || !current.isSignedIn) return undefined;
       return current.getToken();
     });
-    return () => setClerkTokenProvider(null);
+    setClerkSignOutHandler(async () => {
+      const current = authRef.current;
+      if (current.isLoaded && current.isSignedIn) await clerkRef.current.signOut();
+    });
+    return () => {
+      setClerkTokenProvider(null);
+      setClerkSignOutHandler(null);
+    };
   }, []);
-
-  useEffect(() => {
-    if (auth.isLoaded && auth.isSignedIn) void clearLegacyAuthToken();
-  }, [auth.isLoaded, auth.isSignedIn]);
 
   return <>{children}</>;
 }

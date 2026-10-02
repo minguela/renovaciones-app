@@ -41,7 +41,7 @@ test('fails closed when a valid Clerk identity has no explicit legacy link', asy
 });
 
 test('does not write renewal history for a renewal owned by another user', async () => {
-  const calls: Array<{ text: string; params?: unknown[] }> = [];
+  const calls: { text: string; params?: unknown[] }[] = [];
   const handler = createHistoryHandler({
     getActor: async () => ({ userId: 'user-a', identityProvider: 'legacy-jwt' }),
     query: async (text: string, params?: unknown[]) => {
@@ -67,7 +67,7 @@ test('does not write renewal history for a renewal owned by another user', async
 });
 
 test('allows history creation only after confirming the renewal belongs to the actor', async () => {
-  const calls: Array<{ text: string; params?: unknown[] }> = [];
+  const calls: { text: string; params?: unknown[] }[] = [];
   const handler = createHistoryHandler({
     getActor: async () => ({ userId: 'user-a', identityProvider: 'legacy-jwt' }),
     query: async (text: string, params?: unknown[]) => {
@@ -96,7 +96,9 @@ test('keeps the versioned identity migration additive and reversible by leaving 
 
   expect(migration).toContain('CREATE TABLE auth_identity_links');
   expect(migration).toMatch(/clerk_user_id\s+TEXT\s+PRIMARY KEY/i);
-  expect(migration).toMatch(/legacy_user_id\s+UUID\s+NOT NULL\s+UNIQUE/i);
+  expect(migration).toMatch(/owner_user_id\s+UUID\s+NOT NULL\s+UNIQUE/i);
+  expect(migration).toMatch(/password_hash DROP NOT NULL/i);
+  expect(migration).toMatch(/lower\(email\)/i);
   expect(migration).toMatch(/REFERENCES\s+users\s*\(id\)\s+ON DELETE RESTRICT/i);
   expect(migration).not.toMatch(/\b(DROP|DELETE|UPDATE|TRUNCATE)\s+(TABLE|FROM|users|renewals|profiles)\b/i);
 });

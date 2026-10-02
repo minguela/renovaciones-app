@@ -14,12 +14,14 @@ test('uses Clerk tokens for the Clerk session and the stored legacy token only w
   await expect(source()).resolves.toBe('legacy-session-token');
 });
 
-test('retains legacy recovery when Clerk is selected but there is no active Clerk session', async () => {
+test('does not send a stored legacy JWT when Clerk mode has no active Clerk session', async () => {
+  let legacyReads = 0;
   const source = createAuthTokenSource(
     () => 'clerk',
     async () => undefined,
-    async () => 'legacy-session-token',
+    async () => { legacyReads += 1; return 'legacy-session-token'; },
   );
 
-  await expect(source()).resolves.toBe('legacy-session-token');
+  await expect(source()).resolves.toBeNull();
+  expect(legacyReads).toBe(0);
 });

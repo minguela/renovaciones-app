@@ -7,10 +7,10 @@ export const resolveServerActor = createServerActorResolver({
   verifyClerkToken: verifyClerkSessionToken,
   findLegacyUserIdByClerkId: async (clerkUserId) => {
     const { rows } = await query(
-      'SELECT legacy_user_id FROM auth_identity_links WHERE clerk_user_id = $1',
+      'SELECT owner_user_id FROM auth_identity_links WHERE clerk_user_id = $1',
       [clerkUserId],
     );
-    return rows[0]?.legacy_user_id || null;
+    return rows[0]?.owner_user_id || null;
   },
   verifyLegacyToken: async (token) => {
     const claims = verifyToken(token);

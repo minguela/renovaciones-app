@@ -1,79 +1,37 @@
-# Clerk identity migration — provisional boundary
+# Clerk identity migration — staged implementation
 
-**Status:** local integration code is present behind environment configuration.
-No identity migration has been applied and no legacy account has been linked;
-Clerk is not operational in the inspected environment.
+**Status:** local app code and an additive migration draft are present. The migration has not been applied, Clerk keys and Google factors have not been checked, and no identity or app data has been moved.
 
-## Ownership and actor resolution
+## Stable owner and identity rules
 
-Existing resource ownership remains keyed by `users.id` (UUID). The staged
-identity map in `migrations/20261001_auth_identity_links.sql` links a verified
-Clerk subject to exactly one existing user UUID; it does not rewrite user IDs,
-renewals, profiles, catalogs, or history. Both sides are unique, and the
-foreign key uses `ON DELETE RESTRICT` to protect existing users.
+- Existing resource ownership stays on `users.id`; renewals, profiles, catalogs, and history are not rewritten.
+- `auth_identity_links.owner_user_id` maps at most one Clerk subject to one existing app owner, and each owner to at most one Clerk subject. Both unique constraints reject competing links.
+- A Clerk session with a mapping resolves to that mapped `users.id`. An unmapped session cannot fall back to legacy JWT identity or select an owner from request data.
+- Existing-account linking requires two active proofs in one request: the verified Clerk session bearer and a separately verified legacy JWT obtained by checking the user's legacy password. The endpoint links the Clerk `sub` to the exact legacy JWT `sub`; it does not compare email, update `users`, or move ownership.
+- Clerk-first signup calls the server-only Clerk Backend API for the primary email and requires Clerk's verification status to be `verified`. The client does not submit an email for provisioning. If a case-insensitive email already belongs to an app account, the endpoint returns 409 and asks the user to prove that account through the explicit link flow. It never auto-links on matching email.
+- A new Clerk-only `users` row has `password_hash = NULL`; password login explicitly rejects it. New owner, profile, and identity-link rows are created in a single database transaction. A profile-creation or link failure rolls back the owner row as well.
+- Email and Clerk-subject advisory locks serialize concurrent app provisioning. The lower-case unique email index is the final race guard, including collision with legacy registrations that do not take the advisory lock.
 
-`api/server-actor.ts` defines the server actor boundary. The production resolver
-in `api/legacy-actor.ts` now verifies Clerk tokens through the installed
-`@clerk/backend` verifier when `CLERK_SECRET_KEY` and a non-empty
-`CLERK_AUTHORIZED_PARTIES` list are present, then requires an explicit
-`auth_identity_links` row to resolve the existing `users.id`. The verifier checks
-the signature, authorized party, subject, expiry, and not-before claim. A
-verified but unlinked Clerk subject is denied without legacy-token fallback.
-When Clerk configuration is absent, existing legacy JWT authentication remains
-available. No ownership is inferred from email or from API request data.
+## Migration and rollout gates
 
-The actor resolver is wired into renewal and catalog GET/POST/PUT/DELETE,
-history, `/api/auth/me`, profiles, and user-triggered notifications. Cron
-authentication remains separate. The frontend provider and Clerk token cache
-are conditional on `EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY`; Clerk bearer tokens are
-used for API calls while a Clerk session is active, with an explicit switch back
-to the recoverable legacy login screen.
+`migrations/20261001_auth_identity_links.sql` is versioned and additive. It expands password storage for Clerk-only owners, adds the case-insensitive email uniqueness guard, and creates the identity map without changing any existing ID or owner foreign key. A duplicate-email check stops the migration before applying changes if case-insensitive duplicates exist. Do not run it until a reviewed export, per-table counts, collision report, and migration/rollback plan exist.
 
-## Migration and rollback
+The migration is not called by application startup or deployment scripts. Application rollback means returning to legacy authentication while leaving the identity table and existing users/data intact. Do not delete identity rows or app rows as rollback.
 
-The SQL file is versioned and additive. It is not referenced by app startup,
-`scripts/run-migration.js`, or the existing Neon bootstrap, and has not been
-executed. Applying it requires a reviewed data export and collision report.
-Rollback means returning application auth to the legacy JWT path while leaving
-the new map and all old rows in place; do not drop linked identities as part of
-application rollback.
+Before a real migration:
 
-Before an eventual cutover, record per-table counts and inspect normalized
-email collisions, Google ID collisions, orphaned references, and attachment
-sizes in the actual preview and production databases. Resolve duplicate or
-unverifiable accounts explicitly. Do not merge accounts or infer ownership
-from matching email addresses. After linking, read back counts and sample
-ownership for each account before enabling Clerk-only traffic.
+1. Back up the target Neon database and record users, profiles, renewals, history, and catalogs counts and representative owner IDs.
+2. Report case-insensitive email collisions, Google subject collisions, orphaned foreign keys, and attachment sizes. Resolve each affected account manually; never merge based on email alone.
+3. Apply the migration in an isolated preview database, then exercise signup, explicit link, conflict, rollback, old password login, and two-owner isolation.
+4. Review every intended identity pair. Read back exact mapping rows, per-table counts, and sample owner IDs before enabling the flow for more accounts.
+5. Re-run the same checks in production only after an explicit release decision. This local branch contains no production database or provider changes.
 
-## Authentication status and required real checks
+## Remaining live verification
 
-- Legacy email/password and Google JWT endpoints and existing user rows remain
-  in place.
-- The current web Google callback returns the app JWT in a URL query parameter;
-  this has not been replaced in this provisional patch.
-- The current native Google client sends a placeholder authorization code;
-  native sign-in is not functional and is not made functional by adding this
-  actor boundary.
-- The inspected `.env` and `.env.local` did not contain Clerk publishable or
-  secret keys; no provider secrets were configured. The migration SQL remains
-  unapplied and has no reviewed identity rows, so Clerk sessions currently
-  cannot access legacy data.
-- The implementation targets installed `@clerk/expo` 4.8.0 / Core 3. Its
-  experimental `useSSO` hook is imported from the installed `/experimental`
-  export, and session tokens use Clerk's `tokenCache` backed by
-  `expo-secure-store`. A web export succeeds, but this does not verify SSO or
-  dashboard factors.
-- Clerk password and Google flows require the corresponding factors to be
-  enabled in the Clerk instance. Google SSO additionally requires Native API
-  enabled. These console settings were not available for inspection, so Google
-  and password sign-in are not declared operational.
-- The Clerk Expo config plugin needs a fresh native development build (iOS
-  deployment target 17 or newer). No development binary or authenticated
-  session was available; session persistence across restart remains unverified.
-- A real release gate still needs reviewed identity-link rows, a web sign-in
-  and callback, Google auth return, expiration, logout, two-user data
-  isolation, and a native development-build session restart test. No existing
-  account, database, or data was deleted or migrated here.
+- Configure and confirm Clerk server/publishable keys, Google connection, authorized parties, email verification requirements, and Expo Native API in Clerk Dashboard.
+- Complete Google sign-in in the actual Vercel preview on web and a native development build. Confirm callback URLs, Clerk session persistence after restart, logout, expiry, and recovery.
+- Run `e2e/api/clerk-identity-database.integration.spec.ts` only with a dedicated `TEST_DATABASE_URL`; it is skipped without that variable. This exercises Postgres constraints and rollback against that test database, not live Neon production.
+- Run the actual data export, collision report, migration, exact identity-link review, and two-user read/write isolation checks against a backed-up preview database before any production cutover.
+- Existing legacy Google OAuth behavior is separate from Clerk linking and must retain an explicit owner-proof boundary; do not add a path that matches legacy users by email.
 
-Keep Vercel cron authentication, scheduled renewal reminders, push handling,
-and email/Telegram/WhatsApp service credentials separate from user login.
+No existing account, database, or data was deleted or migrated in this branch.

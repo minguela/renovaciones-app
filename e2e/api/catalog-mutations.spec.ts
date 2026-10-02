@@ -15,7 +15,7 @@ function createSystem() {
     }
     if (sql.startsWith('UPDATE user_catalogs')) {
       const [id, userId, name, icon, color, options] = params || [];
-      if (id === 'catalog-a' && userId === 'user-a') return { rows: [catalogRow(String(id), String(userId), String(name), options, icon, color)] };
+      if (id === 'catalog-a' && userId === 'user-a') return { rows: [catalogRow(String(id), String(userId), String(name), options, icon as string | null, color as string | null)] };
       return { rows: [] };
     }
     if (sql.startsWith('DELETE FROM user_catalogs')) {

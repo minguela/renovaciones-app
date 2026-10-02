@@ -8,6 +8,7 @@ import {
   onAuthStateChange,
   type User,
 } from '@/lib/api-client';
+import { signOutAndClearUser } from '@/src/application/auth-sign-out';
 
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
@@ -81,10 +82,22 @@ export function useAuth() {
     setAuthMessage(null);
     setLoading(true);
     try {
-      await apiSignOut();
-      setUser(null);
-    } catch (err: any) {
-      setAuthError(err?.message || 'Error al cerrar sesión');
+      const error = await signOutAndClearUser(apiSignOut, () => setUser(null));
+      if (error) setAuthError(error.message || 'Error al cerrar sesión');
+    } catch {
+      // signOutAndClearUser contains dependency failures; this guards unexpected errors.
+      setAuthError('Error al cerrar sesión');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const refreshUser = useCallback(async () => {
+    setLoading(true);
+    try {
+      const currentUser = await getCurrentUser();
+      setUser(currentUser);
+      return currentUser;
     } finally {
       setLoading(false);
     }
@@ -125,6 +138,7 @@ export function useAuth() {
     signIn,
     signUp,
     signOut,
+    refreshUser,
     signInWithGoogle,
     signInWithApple,
   };

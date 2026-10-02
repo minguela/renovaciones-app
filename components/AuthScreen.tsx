@@ -26,12 +26,13 @@ interface AuthScreenProps {
   loading?: boolean;
   authMessage?: string | null;
   authError?: string | null;
+  onAuthSuccess?: () => Promise<unknown> | unknown;
 }
 
 export function AuthScreen(props: AuthScreenProps) {
   const [useLegacy, setUseLegacy] = useState(!clerkIsConfigured());
   if (!useLegacy && clerkIsConfigured()) {
-    return <ClerkAuthScreen onUseLegacy={() => { setAuthMode('legacy'); setUseLegacy(true); }} />;
+    return <ClerkAuthScreen onUseLegacy={() => { setAuthMode('legacy'); setUseLegacy(true); }} onAuthSuccess={props.onAuthSuccess} />;
   }
   return <LegacyAuthScreen {...props} onUseClerk={() => { setAuthMode('clerk'); setUseLegacy(false); }} />;
 }

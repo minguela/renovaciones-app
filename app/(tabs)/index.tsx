@@ -34,6 +34,7 @@ export default function HomeScreen() {
     loading: authLoading,
     authProcessing,
     signOut,
+    refreshUser,
     signIn,
     signUp,
     signInWithGoogle,
@@ -122,6 +123,7 @@ export default function HomeScreen() {
         onSignUp={signUp}
         onGoogleSignIn={signInWithGoogle}
         onAppleSignIn={signInWithApple}
+        onAuthSuccess={refreshUser}
         loading={authProcessing}
         authMessage={authMessage}
         authError={authError}

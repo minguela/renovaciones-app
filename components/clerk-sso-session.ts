@@ -1,12 +1,8 @@
-export interface ClerkSsoSessionResult {
-  createdSessionId?: string | null;
-  setActive?: (params: { session: string }) => Promise<unknown> | unknown;
-}
+import type { useSSO } from '@clerk/expo/experimental';
 
-/** Activates a completed Clerk SSO session; incomplete/MFA flows stay unauthenticated. */
-export async function activateClerkSsoSession(result: ClerkSsoSessionResult): Promise<boolean> {
-  if (!result.createdSessionId) return false;
-  if (!result.setActive) throw new Error('Clerk no devolvió el activador de sesión.');
-  await result.setActive({ session: result.createdSessionId });
-  return true;
+type ClerkSsoResult = Awaited<ReturnType<ReturnType<typeof useSSO>['startSSOFlow']>>;
+
+/** The experimental Clerk Expo hook finalizes completed SSO sessions internally. */
+export function hasCompletedClerkSsoFlow(result: ClerkSsoResult): boolean {
+  return result.authSessionResult?.type === 'success' && Boolean(result.authSessionResult.url);
 }

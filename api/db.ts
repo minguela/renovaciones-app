@@ -1,4 +1,5 @@
 import { Pool } from '@neondatabase/serverless';
+import type { PoolClient, QueryResult } from '@neondatabase/serverless';
 
 let pool: Pool | null = null;
 
@@ -19,3 +20,24 @@ export async function query(text: string, params?: any[]) {
     client.release();
   }
 }
+
+export async function withTransaction<T>(run: (client: PoolClient) => Promise<T>): Promise<T> {
+  const client = await getPool().connect();
+  try {
+    await client.query('BEGIN');
+    const result = await run(client);
+    await client.query('COMMIT');
+    return result;
+  } catch (error) {
+    try {
+      await client.query('ROLLBACK');
+    } catch {
+      // Keep the original transaction error.
+    }
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+export type DatabaseQueryResult = QueryResult<Record<string, unknown>>;

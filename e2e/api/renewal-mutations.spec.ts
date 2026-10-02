@@ -22,7 +22,7 @@ function createSystem() {
     if (sql.startsWith('UPDATE renewals')) {
       const [id, ownerId] = params || [];
       const row = rowsByOwner[String(ownerId) as keyof typeof rowsByOwner]?.find((item) => item.id === id);
-      return { rows: row ? [{ ...row, name: params?.[2] }] : [] };
+      return { rows: row ? [{ ...row, name: String(params?.[2] ?? row.name) }] : [] };
     }
     if (sql.startsWith('DELETE FROM renewals')) {
       const [id, ownerId] = params || [];

@@ -1,24 +1,32 @@
 import { expect, test } from '@playwright/test';
-import { activateClerkSsoSession } from '../../components/clerk-sso-session';
+import { hasCompletedClerkSsoFlow } from '../../components/clerk-sso-session';
+import type { useSSO } from '@clerk/expo/experimental';
 
-test('activates the Clerk session returned by Google SSO', async () => {
-  const calls: { session: string }[] = [];
-  const activated = await activateClerkSsoSession({
+type ExperimentalSsoResult = Awaited<ReturnType<ReturnType<typeof useSSO>['startSSOFlow']>>;
+
+test('accepts the installed experimental useSSO result after it finalizes the session internally', async () => {
+  const result = {
     createdSessionId: 'sess_123',
-    setActive: async (params) => { calls.push(params); },
-  });
+    authSessionResult: { type: 'success', url: 'renovacionesapp://sso-callback?rotating_token_nonce=nonce' },
+  } satisfies ExperimentalSsoResult;
 
-  expect(activated).toBe(true);
-  expect(calls).toEqual([{ session: 'sess_123' }]);
+  expect(hasCompletedClerkSsoFlow(result)).toBe(true);
 });
 
-test('does not activate or treat an incomplete SSO challenge as signed in', async () => {
-  const activated = await activateClerkSsoSession({ createdSessionId: null });
+test('keeps a cancelled or incomplete SSO result unauthenticated', async () => {
+  const result = {
+    createdSessionId: null,
+    authSessionResult: { type: 'cancel' } as NonNullable<ExperimentalSsoResult['authSessionResult']>,
+  } satisfies ExperimentalSsoResult;
 
-  expect(activated).toBe(false);
+  expect(hasCompletedClerkSsoFlow(result)).toBe(false);
 });
 
-test('fails closed if Clerk returns a session without an activation function', async () => {
-  await expect(activateClerkSsoSession({ createdSessionId: 'sess_123' }))
-    .rejects.toThrow('Clerk no devolvió el activador de sesión.');
+test('requires an auth session callback even when a session id is present', async () => {
+  const result = {
+    createdSessionId: 'sess_123',
+    authSessionResult: null,
+  } satisfies ExperimentalSsoResult;
+
+  expect(hasCompletedClerkSsoFlow(result)).toBe(false);
 });
