@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { createAuthRouter } from '../../api/auth-router';
+import { generateToken, verifyToken } from '../../server/api/auth-helpers';
 
 function response() {
   const result: { statusCode?: number; body?: unknown } = {};
@@ -93,4 +94,17 @@ test('keeps auth handler implementations outside Vercel’s api function directo
     'renewals.ts',
     'send-notification.ts',
   ]);
+});
+
+test('missing JWT_SECRET does not crash module loading and rejects token use safely', () => {
+  const previousSecret = process.env.JWT_SECRET;
+  delete process.env.JWT_SECRET;
+
+  try {
+    expect(verifyToken('any-token')).toBeNull();
+    expect(() => generateToken('user-1')).toThrow('JWT_SECRET environment variable is required');
+  } finally {
+    if (previousSecret === undefined) delete process.env.JWT_SECRET;
+    else process.env.JWT_SECRET = previousSecret;
+  }
 });

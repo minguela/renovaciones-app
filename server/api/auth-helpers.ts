@@ -2,19 +2,22 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 
 const TOKEN_EXPIRY = '30d';
-const JWT_SECRET: string = (() => {
-  const secret = process.env.JWT_SECRET;
-  if (!secret) throw new Error('JWT_SECRET environment variable is required');
-  return secret;
-})();
+
+function getJwtSecret(): string | null {
+  return process.env.JWT_SECRET || null;
+}
 
 export function generateToken(userId: string): string {
-  return jwt.sign({ sub: userId }, JWT_SECRET, { expiresIn: TOKEN_EXPIRY });
+  const secret = getJwtSecret();
+  if (!secret) throw new Error('JWT_SECRET environment variable is required');
+  return jwt.sign({ sub: userId }, secret, { expiresIn: TOKEN_EXPIRY });
 }
 
 export function verifyToken(token: string): { sub: string } | null {
+  const secret = getJwtSecret();
+  if (!secret) return null;
   try {
-    return jwt.verify(token, JWT_SECRET) as { sub: string };
+    return jwt.verify(token, secret) as { sub: string };
   } catch {
     return null;
   }
