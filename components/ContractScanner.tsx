@@ -94,12 +94,8 @@ export function ContractScanner({ onDataExtracted }: Props) {
 
       {!image ? (
         <View style={styles.buttonRow}>
-          <Button onPress={takePhoto} style={styles.actionBtn}>
-            📷 Cámara
-          </Button>
-          <Button onPress={pickFromGallery} style={styles.actionBtn}>
-            🖼️ Galería
-          </Button>
+          <Button title="📷 Cámara" onPress={takePhoto} style={styles.actionBtn} />
+          <Button title="🖼️ Galería" onPress={pickFromGallery} style={styles.actionBtn} />
         </View>
       ) : (
         <View>

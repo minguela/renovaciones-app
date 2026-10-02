@@ -3,6 +3,7 @@
 import { Platform } from 'react-native';
 import { createAuthModePreference, createAuthTokenSource, type AuthMode, type AuthModeStorage } from '@/src/application/auth-token-source';
 import { clearAuthSessions } from '@/src/application/auth-session-lifecycle';
+import type { NotificationMethod, PaymentMethod, RenewalFrequency, RenewalStatus } from '@/types/renewal';
 
 const API_BASE = process.env.EXPO_PUBLIC_API_URL ||
   (Platform.OS === 'web' ? '' : process.env.EXPO_PUBLIC_SITE_URL || 'https://renovaciones.dminguela.es');
@@ -125,7 +126,7 @@ export interface Renewal {
   userId?: string;
   name: string;
   type: string;
-  frequency: string;
+  frequency: RenewalFrequency;
   cost: number;
   currency: string;
   renewalDate: string;
@@ -135,15 +136,16 @@ export interface Renewal {
   icon?: string;
   notificationEnabled: boolean;
   notificationDaysBefore: number;
-  status?: string;
-  paymentMethod?: string;
+  status?: RenewalStatus;
+  paymentMethod?: PaymentMethod;
   bankAccount?: string;
   tags?: string[];
   autoRenew?: boolean;
   contractEndDate?: string;
   attachments?: string[];
-  createdAt?: string;
-  updatedAt?: string;
+  notificationMethods?: NotificationMethod[];
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface RenewalHistory {
@@ -151,8 +153,8 @@ export interface RenewalHistory {
   renewalId: string;
   oldCost: number;
   newCost: number;
-  oldFrequency: string;
-  newFrequency: string;
+  oldFrequency: RenewalFrequency;
+  newFrequency: RenewalFrequency;
   changedAt: string;
 }
 
@@ -428,7 +430,7 @@ export async function getRenewalHistory(renewalId: string): Promise<RenewalHisto
   }
 }
 
-export async function addRenewalHistory(history: { renewalId: string; oldCost: number; newCost: number; oldFrequency: string; newFrequency: string }): Promise<{ data: any; error: Error | null }> {
+export async function addRenewalHistory(history: { renewalId: string; oldCost: number; newCost: number; oldFrequency: RenewalFrequency; newFrequency: RenewalFrequency }): Promise<{ data: any; error: Error | null }> {
   try {
     const data = await apiFetch('history', {
       method: 'POST',

@@ -17,6 +17,8 @@ import { uploadAttachment, deleteAttachment, getAttachmentUrl } from '@/lib/api-
 import { AIRBNB } from '@/constants/airbnb-colors';
 
 const isWeb = Platform.OS === 'web';
+const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB max per file
+const MAX_ATTACHMENTS = 5;
 
 interface AttachmentsUploaderProps {
   userId: string;
@@ -54,10 +56,7 @@ export function AttachmentsUploader({
     };
   }, [attachments]);
 
-  const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB max per file
-  const MAX_ATTACHMENTS = 5;
-
-  const handleFile = async (file: File | Blob, fileName: string) => {
+  const handleFile = useCallback(async (file: File | Blob, fileName: string) => {
     if (file.size > MAX_FILE_SIZE) {
       Alert.alert('Archivo demasiado grande', `Máximo 2MB por archivo. Este pesa ${(file.size / 1024 / 1024).toFixed(1)}MB`);
       return;
@@ -76,7 +75,7 @@ export function AttachmentsUploader({
     }
 
     onAttachmentsChange([...attachments, data]);
-  };
+  }, [attachments, onAttachmentsChange, renewalId, userId]);
 
   const handleWebFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
@@ -114,7 +113,7 @@ export function AttachmentsUploader({
     for (let i = 0; i < files.length; i++) {
       handleFile(files[i], files[i].name);
     }
-  }, [attachments, onAttachmentsChange]);
+  }, [handleFile]);
 
   const pickDocument = async () => {
     try {
@@ -198,12 +197,20 @@ export function AttachmentsUploader({
   return (
     <View style={styles.container}>
       {isWeb ? (
-        <View
-          style={[
-            styles.dropZone,
-            dragActive && styles.dropZoneActive,
-          ]}
-          onMouseEnter={() => setDragActive(false)}
+        <div
+          style={{
+            border: `2px dashed ${dragActive ? AIRBNB.coral : 'rgba(186, 215, 247, 0.2)'}`,
+            borderRadius: 12,
+            padding: 24,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: dragActive ? 'rgba(102, 58, 243, 0.08)' : 'rgba(186, 214, 247, 0.03)',
+            backdropFilter: 'blur(12px)',
+            position: 'relative',
+            overflow: 'hidden',
+          }}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
@@ -213,7 +220,15 @@ export function AttachmentsUploader({
             type="file"
             multiple
             accept=".pdf,image/*"
-            style={styles.fileInput}
+            style={{
+              position: 'absolute',
+              inset: 0,
+              opacity: 0,
+              width: '100%',
+              height: '100%',
+              cursor: 'pointer',
+              zIndex: 2,
+            }}
             onChange={handleWebFileChange}
           />
           <IconSymbol name="doc.badge.arrow.up" size={32} color={AIRBNB.coral} />
@@ -221,7 +236,7 @@ export function AttachmentsUploader({
             Arrastra archivos aquí o haz clic para seleccionar
           </Text>
           <Text style={styles.dropZoneSubtext}>PDF, JPG, PNG</Text>
-        </View>
+        </div>
       ) : (
         <View style={styles.nativeActions}>
           <TouchableOpacity style={styles.nativeButton} onPress={pickDocument}>

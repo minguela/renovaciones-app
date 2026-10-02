@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   StyleSheet,
   ScrollView,
@@ -22,7 +22,6 @@ import { AttachmentsUploader } from '@/components/AttachmentsUploader';
 import { useRenewals } from '@/hooks/useRenewals';
 import { useAuth } from '@/hooks/useAuth';
 import { useCustomCatalogs } from '@/hooks/useCustomCatalogs';
-import { CatalogCategory } from '@/types/catalog';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { AuthScreen } from '@/components/AuthScreen';
 import { Screen } from '@/components/layout/Screen';
@@ -38,7 +37,6 @@ import {
   TAG_OPTIONS,
   NOTIFICATION_METHODS,
   generateId,
-  formatCurrency,
 } from '@/types/renewal';
 
 const isWeb = Platform.OS === 'web';
@@ -146,20 +144,7 @@ export default function RenewalFormScreen() {
     notificationMethods: ['push'],
   });
 
-  useEffect(() => {
-    if (isEditing) {
-      loadRenewal();
-    }
-  }, [id]);
-
-  // Set default renewal date after mount to avoid hydration mismatch
-  useEffect(() => {
-    if (!isEditing) {
-      setFormData(prev => ({ ...prev, renewalDate: new Date() }));
-    }
-  }, []);
-
-  const loadRenewal = async () => {
+  const loadRenewal = useCallback(async () => {
     setLoading(true);
     const renewal = await getRenewalById(id);
     if (renewal) {
@@ -188,7 +173,20 @@ export default function RenewalFormScreen() {
       });
     }
     setLoading(false);
-  };
+  }, [getRenewalById, id]);
+
+  useEffect(() => {
+    if (isEditing) {
+      loadRenewal();
+    }
+  }, [isEditing, loadRenewal]);
+
+  // Set default renewal date after mount to avoid hydration mismatch
+  useEffect(() => {
+    if (!isEditing) {
+      setFormData(prev => ({ ...prev, renewalDate: new Date() }));
+    }
+  }, [isEditing]);
 
   const handleSave = async () => {
     if (!formData.name.trim()) {
@@ -402,7 +400,7 @@ export default function RenewalFormScreen() {
           <Input
             label="Proveedor"
             placeholder="Ej: Mapfre"
-            value={formData.provider}
+            value={formData.provider ?? ''}
             onChangeText={(text) => updateFormData('provider', text)}
             style={styles.input}
           />
@@ -668,7 +666,7 @@ export default function RenewalFormScreen() {
           <Text style={[styles.sectionTitle, sectionTitleStyle]}>Notas</Text>
           <Input
             placeholder="Añade notas adicionales..."
-            value={formData.notes}
+            value={formData.notes ?? ''}
             onChangeText={(text) => updateFormData('notes', text)}
             multiline
             numberOfLines={4}
@@ -782,7 +780,7 @@ export default function RenewalFormScreen() {
             <Input
               label="Cuenta bancaria"
               placeholder="IBAN / Número de cuenta"
-              value={formData.bankAccount}
+              value={formData.bankAccount ?? ''}
               onChangeText={(text) => updateFormData('bankAccount', text)}
               style={[styles.input, { marginTop: 12 }]}
             />
@@ -896,7 +894,7 @@ export default function RenewalFormScreen() {
           await addCustomCatalog({
             name: cat.name,
             icon: cat.icon,
-            color: cat.color,
+            color: cat.color ?? '#007AFF',
             options: [],
           });
         }}
