@@ -10,9 +10,12 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "build": "expo export --platform web",
+    "test:api": "playwright test --config=playwright.api.config.ts",
     "test:e2e": "playwright test"
   },
   "dependencies": {
+    "@clerk/backend": "^3.22.0",
+    "@clerk/expo": "^4.8.0",
     "@expo/vector-icons": "^15.0.3",
     "@neondatabase/serverless": "^1.1.0",
     "@react-native-async-storage/async-storage": "^3.0.2",
@@ -24,6 +27,7 @@
     "bcryptjs": "^3.0.3",
     "date-fns": "^4.1.0",
     "expo": "~54.0.33",
+    "expo-auth-session": "~7.0.11",
     "expo-constants": "~18.0.13",
     "expo-device": "^55.0.16",
     "expo-document-picker": "^55.0.13",
@@ -35,6 +39,7 @@
     "expo-linking": "~8.0.11",
     "expo-notifications": "^55.0.22",
     "expo-router": "~6.0.23",
+    "expo-secure-store": "~15.0.8",
     "expo-splash-screen": "~31.0.13",
     "expo-status-bar": "~3.0.9",
     "expo-symbols": "~1.0.8",

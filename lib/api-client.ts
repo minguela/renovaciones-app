@@ -1,26 +1,45 @@
 // API client for RenovacionesApp — replaces Supabase with Neon-backed API routes
 // Works on both web (fetch) and native (fetch)
 import { Platform } from 'react-native';
+import { createAuthTokenSource, type AuthMode } from '@/src/application/auth-token-source';
 
 const API_BASE = process.env.EXPO_PUBLIC_API_URL ||
   (Platform.OS === 'web' ? '' : process.env.EXPO_PUBLIC_SITE_URL || 'https://renovaciones.dminguela.es');
 
 // Token storage abstraction (works with AsyncStorage on native, localStorage on web)
 let tokenStore: { getToken: () => Promise<string | null>; setToken: (t: string | null) => Promise<void> } | null = null;
+let clerkTokenProvider: (() => Promise<string | null | undefined>) | null = null;
+let authMode: AuthMode = 'clerk';
+
+/** An undefined token means Clerk is signed out and legacy auth remains selected. */
+export function setClerkTokenProvider(provider: (() => Promise<string | null | undefined>) | null) {
+  clerkTokenProvider = provider;
+}
+
+export function setAuthMode(mode: AuthMode) {
+  authMode = mode;
+}
+
+export async function clearLegacyAuthToken() {
+  await setToken(null);
+}
 
 export function setTokenStore(store: { getToken: () => Promise<string | null>; setToken: (t: string | null) => Promise<void> }) {
   tokenStore = store;
 }
 
 async function getToken(): Promise<string | null> {
-  if (!tokenStore) {
-    // Fallback to localStorage for web
-    if (typeof localStorage !== 'undefined') {
-      return localStorage.getItem('auth_token');
-    }
-    return null;
-  }
-  return tokenStore.getToken();
+  return createAuthTokenSource(
+    () => authMode,
+    async () => clerkTokenProvider ? clerkTokenProvider() : undefined,
+    async () => {
+      if (!tokenStore) {
+        if (typeof localStorage !== 'undefined') return localStorage.getItem('auth_token');
+        return null;
+      }
+      return tokenStore.getToken();
+    },
+  )();
 }
 
 async function setToken(token: string | null) {

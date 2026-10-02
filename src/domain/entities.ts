@@ -18,12 +18,51 @@ export interface Renewal {
   updated_at: string
 }
 
+/** Read model returned by the existing renewals API and consumed by the app. */
+export interface RenewalListItem {
+  id: string
+  userId: string
+  name: string
+  type: string
+  frequency: string
+  cost: number
+  currency: string
+  renewalDate: string | Date
+  provider: string | null
+  notes: string | null
+  color: string | null
+  icon: string | null
+  notificationEnabled: boolean
+  notificationDaysBefore: number
+  status: string
+  paymentMethod: string | null
+  bankAccount: string | null
+  tags: unknown[]
+  autoRenew: boolean
+  contractEndDate: string | Date | null
+  attachments: unknown[]
+  createdAt: string | Date
+  updatedAt: string | Date
+}
+
 export interface Catalog {
   id: string
   name: string
   description?: string
   items_count: number
   created_at: string
+}
+
+/** Persisted user-owned category consumed by the renewal catalog picker. */
+export interface CustomCatalog {
+  id: string
+  userId: string
+  name: string
+  icon: string
+  color: string
+  options: unknown[]
+  createdAt: string
+  updatedAt: string
 }
 
 export interface User {

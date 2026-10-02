@@ -1,9 +1,10 @@
 import { query } from './db';
-import { getUserIdFromRequest } from './auth-helpers';
+import { resolveServerActor } from './legacy-actor';
 
 export default async function handler(req: any, res: any) {
-  const userId = getUserIdFromRequest(req);
-  if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+  const actor = await resolveServerActor(req);
+  if (!actor) return res.status(401).json({ error: 'Unauthorized' });
+  const userId = actor.userId;
 
   try {
     if (req.method === 'GET') {

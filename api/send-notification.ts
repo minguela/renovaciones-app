@@ -1,5 +1,5 @@
 import { query } from './db';
-import { getUserIdFromRequest } from './auth-helpers';
+import { resolveServerActor } from './legacy-actor';
 import { deliverNotification } from '../lib/notifications/delivery';
 import { daysBetween, nextOccurrence } from '../lib/notifications/reminders';
 
@@ -7,8 +7,9 @@ export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   try {
-    const userId = getUserIdFromRequest(req);
-    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+    const actor = await resolveServerActor(req);
+    if (!actor) return res.status(401).json({ error: 'Unauthorized' });
+    const userId = actor.userId;
 
     const profile = (await query(
       `SELECT p.*, u.email AS user_email FROM profiles p JOIN users u ON p.user_id = u.id WHERE p.user_id = $1`,
