@@ -32,7 +32,7 @@ export function createClerkLegacyLinkHandler(dependencies: {
   };
 }
 
-export default createClerkLegacyLinkHandler({
+export const handler = createClerkLegacyLinkHandler({
   verifyClerk: verifyClerkSessionToken,
   verifyLegacy: async (token) => {
     const claims = verifyToken(token);

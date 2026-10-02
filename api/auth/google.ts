@@ -35,7 +35,7 @@ async function exchangeCodeForUser(code: string, redirectUri: string) {
   return userRes.json();
 }
 
-export default async function handler(req: any, res: any) {
+export async function handler(req: any, res: any) {
   // --- GET: OAuth callback (web flow) ---
   if (req.method === 'GET') {
     const { code, error: googleError } = req.query || {};

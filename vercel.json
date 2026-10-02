@@ -8,7 +8,13 @@
     { "path": "/api/check-renewals", "schedule": "0 7 * * *" }
   ],
   "rewrites": [
-    { "source": "/api/auth/google/callback", "destination": "/api/auth/google" },
+    { "source": "/api/auth/google/callback", "destination": "/api/auth-router?route=google" },
+    { "source": "/api/auth/google", "destination": "/api/auth-router?route=google" },
+    { "source": "/api/auth/login", "destination": "/api/auth-router?route=login" },
+    { "source": "/api/auth/me", "destination": "/api/auth-router?route=me" },
+    { "source": "/api/auth/register", "destination": "/api/auth-router?route=register" },
+    { "source": "/api/auth/clerk/link-legacy", "destination": "/api/auth-router?route=linkLegacy" },
+    { "source": "/api/auth/clerk/provision", "destination": "/api/auth-router?route=provision" },
     { "source": "/renewal/:id", "destination": "/renewal/[id].html" }
   ],
   "headers": [

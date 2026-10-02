@@ -34,7 +34,7 @@ export function createLegacyLoginHandler(dependencies: {
   };
 }
 
-export default createLegacyLoginHandler({
+export const handler = createLegacyLoginHandler({
   findUser: async (email) => {
     const { rows } = await query('SELECT id, email, password_hash FROM users WHERE email = $1', [email]);
     return rows[0] || null;

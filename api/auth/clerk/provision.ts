@@ -37,7 +37,7 @@ export function createClerkProvisionHandler(dependencies: {
   };
 }
 
-export default createClerkProvisionHandler({
+export const handler = createClerkProvisionHandler({
   verifyClerk: verifyClerkSessionToken,
   findOwner: async (clerkUserId) => {
     const { rows } = await query(
