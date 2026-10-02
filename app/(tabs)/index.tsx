@@ -34,6 +34,7 @@ export default function HomeScreen() {
     loading: authLoading,
     authProcessing,
     signOut,
+    refreshUser,
     signIn,
     signUp,
     signInWithGoogle,
@@ -41,7 +42,7 @@ export default function HomeScreen() {
     authMessage,
     authError,
   } = useAuth();
-  const { renewals, loading, error, refresh } = useRenewals(user?.id);
+  const { renewals, loading, error, refresh, deleteRenewal } = useRenewals(user?.id);
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
   const [summaryExpanded, setSummaryExpanded] = useState(false);
   const tintColor = useThemeColor({ light: '#007AFF', dark: '#0A84FF' }, 'tint');
@@ -122,6 +123,7 @@ export default function HomeScreen() {
         onSignUp={signUp}
         onGoogleSignIn={signInWithGoogle}
         onAppleSignIn={signInWithApple}
+        onAuthSuccess={refreshUser}
         loading={authProcessing}
         authMessage={authMessage}
         authError={authError}
@@ -233,7 +235,7 @@ export default function HomeScreen() {
 
         <TouchableOpacity
           style={styles.secondaryActionButton}
-          onPress={() => router.push('/settings')}
+          onPress={() => router.push('../settings')}
           activeOpacity={0.8}
         >
           <ThemedText style={styles.secondaryActionButtonText}>Ajustes</ThemedText>
@@ -328,7 +330,7 @@ export default function HomeScreen() {
                     size="sm"
                   />
                 )}
-                <IconButton icon="gearshape" label="Abrir ajustes" onPress={() => router.push('/settings')} />
+                <IconButton icon="gearshape" label="Abrir ajustes" onPress={() => router.push('../settings')} />
                 <Button
                   title="Salir"
                   onPress={handleSignOut}

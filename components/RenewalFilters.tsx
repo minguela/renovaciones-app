@@ -8,8 +8,8 @@ import {
   STATUS_OPTIONS,
   PAYMENT_METHODS,
   NOTIFICATION_METHODS,
-  COLORS,
   type Renewal,
+  type NotificationMethod,
 } from '@/types/renewal';
 
 const isWeb = Platform.OS === 'web';
@@ -19,7 +19,7 @@ export interface FilterState {
   type: string | null;
   frequency: string | null;
   paymentMethod: string | null;
-  notificationMethod: string | null;
+  notificationMethod: NotificationMethod | null;
   notificationDaysBefore: number | null;
   dateRange: 'all' | '7d' | '30d' | '90d' | 'thisYear' | null;
   searchQuery: string;
@@ -207,7 +207,7 @@ export function applyFilters(renewals: Renewal[], filters: FilterState): Renewal
     if (filters.type !== null && r.type !== filters.type) return false;
     if (filters.frequency !== null && r.frequency !== filters.frequency) return false;
     if (filters.paymentMethod !== null && r.paymentMethod !== filters.paymentMethod) return false;
-    if (filters.notificationMethod !== null && r.notificationMethod !== filters.notificationMethod) return false;
+    if (filters.notificationMethod !== null && !r.notificationMethods?.includes(filters.notificationMethod)) return false;
     if (filters.notificationDaysBefore !== null && r.notificationDaysBefore !== filters.notificationDaysBefore) return false;
     if (filters.dateRange) {
       const days = getDaysUntil(r.renewalDate);

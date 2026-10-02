@@ -1,4 +1,4 @@
-import { query } from './db';
+import { query } from '../server/api/db';
 import { deliverNotification } from '../lib/notifications/delivery';
 import { daysBetween, nextOccurrence, shouldRemind } from '../lib/notifications/reminders';
 

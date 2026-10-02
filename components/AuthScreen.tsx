@@ -12,6 +12,9 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { Button } from '@/components/ui/Button';
 import { Screen } from '@/components/layout/Screen';
 import { useSemanticTheme } from '@/constants/design-tokens';
+import { clerkIsConfigured } from '@/components/ClerkRuntime';
+import { ClerkAuthScreen } from '@/components/ClerkAuthScreen';
+import { setAuthMode } from '@/lib/api-client';
 
 const isWeb = Platform.OS === 'web';
 
@@ -23,9 +26,18 @@ interface AuthScreenProps {
   loading?: boolean;
   authMessage?: string | null;
   authError?: string | null;
+  onAuthSuccess?: () => Promise<unknown> | unknown;
 }
 
-export function AuthScreen({
+export function AuthScreen(props: AuthScreenProps) {
+  const [useLegacy, setUseLegacy] = useState(!clerkIsConfigured());
+  if (!useLegacy && clerkIsConfigured()) {
+    return <ClerkAuthScreen onUseLegacy={() => { setAuthMode('legacy'); setUseLegacy(true); }} onAuthSuccess={props.onAuthSuccess} />;
+  }
+  return <LegacyAuthScreen {...props} onUseClerk={() => { setAuthMode('clerk'); setUseLegacy(false); }} />;
+}
+
+function LegacyAuthScreen({
   onSignIn,
   onSignUp,
   onGoogleSignIn,
@@ -33,7 +45,8 @@ export function AuthScreen({
   loading = false,
   authMessage,
   authError,
-}: AuthScreenProps) {
+  onUseClerk,
+}: AuthScreenProps & { onUseClerk: () => void }) {
   const { colors, spacing, radius } = useSemanticTheme();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
@@ -182,6 +195,16 @@ export function AuthScreen({
               {isLogin ? '¿No tienes cuenta? Crear cuenta' : '¿Ya tienes cuenta? Iniciar sesión'}
             </Text>
           </TouchableOpacity>
+          {clerkIsConfigured() ? (
+            <TouchableOpacity
+              style={{ marginTop: spacing.md, alignSelf: 'center' }}
+              onPress={onUseClerk}
+              disabled={loading}
+              activeOpacity={0.8}
+            >
+              <Text style={{ color: colors.accentPrimary, fontWeight: '600' }}>Usar inicio de sesión con Clerk</Text>
+            </TouchableOpacity>
+          ) : null}
         </View>
       </View>
     </Screen>

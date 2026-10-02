@@ -1,26 +1,68 @@
 // API client for RenovacionesApp — replaces Supabase with Neon-backed API routes
 // Works on both web (fetch) and native (fetch)
 import { Platform } from 'react-native';
+import { createAuthModePreference, createAuthTokenSource, type AuthMode, type AuthModeStorage } from '@/src/application/auth-token-source';
+import { clearAuthSessions } from '@/src/application/auth-session-lifecycle';
+import type { NotificationMethod, PaymentMethod, RenewalFrequency, RenewalStatus } from '@/types/renewal';
 
 const API_BASE = process.env.EXPO_PUBLIC_API_URL ||
   (Platform.OS === 'web' ? '' : process.env.EXPO_PUBLIC_SITE_URL || 'https://renovaciones.dminguela.es');
 
 // Token storage abstraction (works with AsyncStorage on native, localStorage on web)
 let tokenStore: { getToken: () => Promise<string | null>; setToken: (t: string | null) => Promise<void> } | null = null;
+let clerkTokenProvider: (() => Promise<string | null | undefined>) | null = null;
+let clerkSignOutHandler: (() => Promise<void>) | null = null;
+let authMode: AuthMode = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY?.trim() ? 'clerk' : 'legacy';
+let authModePreference = createAuthModePreference(authMode);
+
+/** An undefined token means Clerk is signed out and legacy auth remains selected. */
+export function setClerkTokenProvider(provider: (() => Promise<string | null | undefined>) | null) {
+  clerkTokenProvider = provider;
+}
+
+export function setClerkSignOutHandler(handler: (() => Promise<void>) | null) {
+  clerkSignOutHandler = handler;
+}
+
+export function setAuthMode(mode: AuthMode) {
+  authMode = mode;
+  return authModePreference.setMode(mode).catch(() => undefined);
+}
+
+export function setAuthModeStorage(storage: AuthModeStorage) {
+  authModePreference = createAuthModePreference(authMode, storage);
+}
+
+export async function clearLegacyAuthToken() {
+  await setToken(null);
+}
+
+/** Read the legacy JWT only when the user explicitly requests account linking. */
+export async function getStoredLegacyAuthToken(): Promise<string | null> {
+  if (!tokenStore) {
+    if (typeof localStorage !== 'undefined') return localStorage.getItem('auth_token');
+    return null;
+  }
+  return tokenStore.getToken();
+}
 
 export function setTokenStore(store: { getToken: () => Promise<string | null>; setToken: (t: string | null) => Promise<void> }) {
   tokenStore = store;
 }
 
 async function getToken(): Promise<string | null> {
-  if (!tokenStore) {
-    // Fallback to localStorage for web
-    if (typeof localStorage !== 'undefined') {
-      return localStorage.getItem('auth_token');
-    }
-    return null;
-  }
-  return tokenStore.getToken();
+  const selectedMode = await authModePreference.getMode();
+  return createAuthTokenSource(
+    () => selectedMode,
+    async () => clerkTokenProvider ? clerkTokenProvider() : undefined,
+    async () => {
+      if (!tokenStore) {
+        if (typeof localStorage !== 'undefined') return localStorage.getItem('auth_token');
+        return null;
+      }
+      return tokenStore.getToken();
+    },
+  )();
 }
 
 async function setToken(token: string | null) {
@@ -41,7 +83,7 @@ async function apiFetch(path: string, options: RequestInit = {}): Promise<any> {
     'Content-Type': 'application/json',
     ...(options.headers as Record<string, string> || {}),
   };
-  if (token) {
+  if (token && !headers.Authorization && !headers.authorization) {
     headers['Authorization'] = `Bearer ${token}`;
   }
 
@@ -49,7 +91,10 @@ async function apiFetch(path: string, options: RequestInit = {}): Promise<any> {
   const data = await res.json();
 
   if (!res.ok) {
-    throw new Error(data.error || `HTTP ${res.status}`);
+    const error = new Error(data.error || `HTTP ${res.status}`) as Error & { status: number; code?: string };
+    error.status = res.status;
+    error.code = data.code;
+    throw error;
   }
   return data;
 }
@@ -81,7 +126,7 @@ export interface Renewal {
   userId?: string;
   name: string;
   type: string;
-  frequency: string;
+  frequency: RenewalFrequency;
   cost: number;
   currency: string;
   renewalDate: string;
@@ -91,15 +136,16 @@ export interface Renewal {
   icon?: string;
   notificationEnabled: boolean;
   notificationDaysBefore: number;
-  status?: string;
-  paymentMethod?: string;
+  status?: RenewalStatus;
+  paymentMethod?: PaymentMethod;
   bankAccount?: string;
   tags?: string[];
   autoRenew?: boolean;
   contractEndDate?: string;
   attachments?: string[];
-  createdAt?: string;
-  updatedAt?: string;
+  notificationMethods?: NotificationMethod[];
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface RenewalHistory {
@@ -107,8 +153,8 @@ export interface RenewalHistory {
   renewalId: string;
   oldCost: number;
   newCost: number;
-  oldFrequency: string;
-  newFrequency: string;
+  oldFrequency: RenewalFrequency;
+  newFrequency: RenewalFrequency;
   changedAt: string;
 }
 
@@ -126,6 +172,7 @@ export interface UserCatalog {
 // ── Auth ──
 export async function signUp(email: string, password: string): Promise<{ data: { user: User } | null; error: Error | null }> {
   try {
+    await setAuthMode('legacy');
     const data = await apiFetch('auth/register', {
       method: 'POST',
       body: JSON.stringify({ email, password }),
@@ -139,6 +186,7 @@ export async function signUp(email: string, password: string): Promise<{ data: {
 
 export async function signIn(email: string, password: string): Promise<{ data: { user: User } | null; error: Error | null }> {
   try {
+    await setAuthMode('legacy');
     const data = await apiFetch('auth/login', {
       method: 'POST',
       body: JSON.stringify({ email, password }),
@@ -152,7 +200,11 @@ export async function signIn(email: string, password: string): Promise<{ data: {
 
 export async function signOut(): Promise<{ error: Error | null }> {
   try {
-    await setToken(null);
+    await clearAuthSessions({
+      clearLegacyToken: () => setToken(null),
+      signOutClerk: async () => { await clerkSignOutHandler?.(); },
+    });
+    await setAuthMode('legacy');
     return { error: null };
   } catch (err: any) {
     return { error: err };
@@ -167,6 +219,38 @@ export async function getCurrentUser(): Promise<User | null> {
   }
 }
 
+/** Clerk sessions can create a new owner only through the verified server path. */
+export async function provisionClerkAccount(clerkToken?: string): Promise<User> {
+  await setAuthMode('clerk');
+  return apiFetch('auth/clerk/provision', {
+    method: 'POST',
+    headers: clerkToken ? { Authorization: `Bearer ${clerkToken}` } : undefined,
+    body: JSON.stringify({}),
+  });
+}
+
+/** Checks legacy credentials without storing the returned bearer token on device. */
+export async function verifyLegacyCredentials(email: string, password: string): Promise<{ token: string }> {
+  const res = await fetch(`${API_BASE}/api/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password }),
+  });
+  const data = await res.json();
+  if (!res.ok || typeof data.token !== 'string') throw new Error(data.error || 'No se pudieron verificar las credenciales anteriores.');
+  return { token: data.token };
+}
+
+/** Links the active Clerk session to the exact owner proved by the legacy JWT. */
+export async function linkClerkToLegacyAccount(legacyToken: string, clerkToken?: string): Promise<User> {
+  await setAuthMode('clerk');
+  return apiFetch('auth/clerk/link-legacy', {
+    method: 'POST',
+    headers: clerkToken ? { Authorization: `Bearer ${clerkToken}` } : undefined,
+    body: JSON.stringify({ legacyToken }),
+  });
+}
+
 // ── Google OAuth ──
 // Web: redirects to Google, callback returns token in URL
 // Native: opens auth session via expo-auth-session
@@ -177,6 +261,7 @@ const GOOGLE_CALLBACK_PATH = '/api/auth/google/callback';
 
 export async function signInWithGoogle(): Promise<{ data: any; error: Error | null }> {
   try {
+    await setAuthMode('legacy');
     // Web flow: redirect to Google
     if (typeof window !== 'undefined' && typeof document !== 'undefined') {
       const redirectUri = `${SITE_URL}${GOOGLE_CALLBACK_PATH}`;
@@ -210,6 +295,7 @@ export function handleOAuthCallback(): { token: string } | null {
   const token = params.get('token');
   if (token) {
     localStorage.setItem('auth_token', token);
+    setAuthMode('legacy');
     // Clean URL
     window.history.replaceState(null, '', window.location.pathname);
     return { token };
@@ -344,7 +430,7 @@ export async function getRenewalHistory(renewalId: string): Promise<RenewalHisto
   }
 }
 
-export async function addRenewalHistory(history: { renewalId: string; oldCost: number; newCost: number; oldFrequency: string; newFrequency: string }): Promise<{ data: any; error: Error | null }> {
+export async function addRenewalHistory(history: { renewalId: string; oldCost: number; newCost: number; oldFrequency: RenewalFrequency; newFrequency: RenewalFrequency }): Promise<{ data: any; error: Error | null }> {
   try {
     const data = await apiFetch('history', {
       method: 'POST',

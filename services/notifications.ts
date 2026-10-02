@@ -97,6 +97,8 @@ export async function getScheduledNotifications(): Promise<Notifications.Notific
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
     shouldPlaySound: true,
     shouldSetBadge: false,
   }),

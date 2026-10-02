@@ -37,6 +37,10 @@
     "plugins": [
       "expo-router",
       [
+        "@clerk/expo",
+        { "appleSignIn": false }
+      ],
+      [
         "expo-splash-screen",
         {
           "image": "./assets/images/splash-icon.png",
@@ -56,7 +60,8 @@
           "defaultChannel": "renewals",
           "enableBackgroundRemoteNotifications": true
         }
-      ]
+      ],
+      "expo-secure-store"
     ],
     "experiments": {
       "typedRoutes": true,

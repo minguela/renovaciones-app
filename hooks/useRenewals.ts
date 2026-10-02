@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import type { Renewal } from '@/types/renewal';
-import type { RenewalHistory } from '@/types/renewal';
+import type { Renewal, RenewalHistory } from '@/types/renewal';
 import {
   getRenewals as apiGetRenewals,
   addRenewal as apiAddRenewal,

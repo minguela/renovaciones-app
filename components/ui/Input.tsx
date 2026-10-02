@@ -1,5 +1,5 @@
 import React from 'react';
-import { TextInput, StyleSheet, Text, View, ViewStyle } from 'react-native';
+import { TextInput, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 import { useSemanticTheme } from '@/constants/design-tokens';
 
 interface InputProps {
@@ -11,7 +11,7 @@ interface InputProps {
   secureTextEntry?: boolean;
   multiline?: boolean;
   numberOfLines?: number;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
   error?: string;
 }
 
